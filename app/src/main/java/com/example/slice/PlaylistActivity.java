@@ -81,6 +81,9 @@ public class PlaylistActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_playlist);
 
+        // Test for git
+        System.out.println("this is to test git");
+
         // Views and Intent
         String playlistUri = (String) getIntent().getExtras().get("playlistUri");
         String playlistName = (String) getIntent().getExtras().get("playlistName");

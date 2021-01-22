@@ -1,0 +1,6 @@
+include ':spotify-app-remote-release-0.7.1'
+include ':spotify-app-remote-release-0.7.1'
+include ':spotify-app-remote-release-0.7.1'
+include ':spotify-app-remote-release-0.7.1'
+include ':app'
+rootProject.name = "SLICE"

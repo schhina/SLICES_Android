@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:background="#242424"
@@ -7,57 +7,116 @@
     android:layout_height="match_parent"
     tools:context=".PlaylistActivity">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/playlist_activity_song_recycler"
-        android:layout_width="398dp"
-        android:layout_height="581dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.461"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/playlist_activity_name_textView"
-        app:layout_constraintVertical_bias="1.0" />
+    <!--Toolbar at the top (Optional, prolly remove)-->
 
-    <Button
-        android:id="@+id/playlist_activity_play_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="monospace"
-        android:onClick="play"
-        android:text="Play"
-        app:layout_constraintBottom_toTopOf="@+id/playlist_activity_song_recycler"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.16"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/playlist_activity_name_textView"
-        app:layout_constraintVertical_bias="0.463" />
+    <FrameLayout
+        android:id="@+id/toolbar_container"
+        android:fitsSystemWindows="true"
+        android:background="@drawable/background_gradient"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        
+        <androidx.appcompat.widget.Toolbar
+            android:id="@+id/toolbar"
+            android:background="@android:color/transparent"
+            app:popupTheme="@style/ThemeOverlay.AppCompat.Light"
+            android:theme="@style/ThemeOverlay.AppCompat.Dark.ActionBar"
+            android:layout_width="match_parent"
+            android:layout_height="?attr/actionBarSize">
 
-    <TextView
-        android:id="@+id/playlist_activity_name_textView"
-        android:layout_width="258dp"
-        android:layout_height="45dp"
-        android:fontFamily="monospace"
-        android:text="Name"
-        android:textColor="@color/browser_actions_bg_grey"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.189"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.023" />
 
-    <Button
-        android:id="@+id/playlist_activity_clear_button"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:fontFamily="monospace"
-        android:onClick="clear"
-        android:text="Clear"
-        app:layout_constraintBottom_toTopOf="@+id/playlist_activity_song_recycler"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.672"
-        app:layout_constraintStart_toEndOf="@+id/playlist_activity_play_button"
-        app:layout_constraintTop_toBottomOf="@+id/playlist_activity_name_textView"
-        app:layout_constraintVertical_bias="0.463" />
+        </androidx.appcompat.widget.Toolbar>
 
-</androidx.constraintlayout.widget.ConstraintLayout>
+    </FrameLayout>
+
+    <!--The crazy shit-->
+
+    <edmt.dev.advancednestedscrollview.AdvancedNestedScrollView
+        android:id="@+id/nested_scroll_view"
+        app:layout_behavior="com.example.slice.behavior.CustomBehavior"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+
+        <FrameLayout
+            android:id="@+id/card_container"
+            android:descendantFocusability="blocksDescendants"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content">
+        <!--            android:layout_marginLeft="24dp"-->
+        <!--            android:layout_marginRight="24dp"-->
+            <androidx.cardview.widget.CardView
+                android:id="@+id/card_view"
+                app:cardCornerRadius="2dp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:background="#242424"
+                    >
+
+                    <TextView
+                        android:id="@+id/card_title"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:paddingBottom="4dp"
+                        android:paddingLeft="24dp"
+                        android:paddingRight="24dp"
+                        android:paddingTop="16dp"
+                        android:text="Christmas"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Headline"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+
+                    <TextView
+                        android:id="@+id/card_sub_title"
+                        android:ellipsize="end"
+                        android:maxLines="1"
+                        android:paddingBottom="8dp"
+                        android:paddingLeft="24dp"
+                        android:paddingRight="24dp"
+                        android:paddingTop="16dp"
+                        android:text="Best 5 Christmas tree around the world"
+                        android:textAppearance="@style/TextAppearance.AppCompat.Subhead"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"/>
+
+                    <FrameLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content">
+
+                        <edmt.dev.advancednestedscrollview.MaxHeightRecyclerView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:id="@+id/card_recycler_view">
+
+                        </edmt.dev.advancednestedscrollview.MaxHeightRecyclerView>
+
+                        <View
+                            android:layout_width="match_parent"
+                            android:layout_height="6dp"
+                            android:id="@+id/card_header_shadow"
+                            android:alpha="0"
+                            android:background="@drawable/toolbar_shadow">
+
+                        </View>
+                    </FrameLayout>
+                </LinearLayout>
+
+
+            </androidx.cardview.widget.CardView>
+
+            <com.google.android.material.floatingactionbutton.FloatingActionButton
+                android:id="@+id/fab"
+                android:layout_gravity="top|end"
+                android:layout_marginRight="24dp"
+                app:srcCompat="@drawable/ic_share_white_24dp"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"/>
+        </FrameLayout>
+    </edmt.dev.advancednestedscrollview.AdvancedNestedScrollView>
+
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>

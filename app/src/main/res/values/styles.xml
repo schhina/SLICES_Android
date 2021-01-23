@@ -7,4 +7,12 @@
         <item name="colorAccent">@color/colorAccent</item>
     </style>
 
+    <style name="toolbar_font" parent="@android:style/TextAppearance.Medium">
+        <item name="android:fontFamily">sans-serif</item>
+<!--        <item name="android:textSize">28sp</item>-->
+<!--        <item name="android:textColor">#000</item>-->
+<!--        <item name="android:textStyle">bold</item>-->
+    </style>
+
+
 </resources>

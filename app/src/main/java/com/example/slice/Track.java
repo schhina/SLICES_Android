@@ -8,6 +8,7 @@ public class Track {
     String name;
     int duration_ms;
     String imageUrl;
+    public String artist;
 
     public Track(String uri, String id, String playlistUri, String name, int duration, String imageUrl) {
         this.uri = uri;

@@ -2,12 +2,14 @@ package com.example.slice;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -16,6 +18,7 @@ import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.TextView;
 
+import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -23,6 +26,7 @@ import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Result;
 import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.PlayerState;
+import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -44,6 +48,7 @@ import java.util.concurrent.TimeUnit;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyService;
+import kaaes.spotify.webapi.android.models.ArtistSimple;
 import kaaes.spotify.webapi.android.models.Image;
 import kaaes.spotify.webapi.android.models.Playlist;
 import kaaes.spotify.webapi.android.models.PlaylistTrack;
@@ -79,7 +84,11 @@ public class PlaylistActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_playlist);
+        setContentView(R.layout.activity_playlist_test);
+        Toolbar toolbar = findViewById(R.id.toolbar_playlist);;
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
 
         // Test for git
         System.out.println("this is to test git");
@@ -88,13 +97,20 @@ public class PlaylistActivity extends AppCompatActivity {
         String playlistUri = (String) getIntent().getExtras().get("playlistUri");
         String playlistName = (String) getIntent().getExtras().get("playlistName");
         String id = (String) getIntent().getExtras().get("playlistId");
+        String imageUrl = getIntent().getExtras().getString("image");
+        ImageView imageview = findViewById(R.id.playlist_image);
+        Picasso.get().load(imageUrl).into(imageview);
         model = new com.example.slice.Playlist(playlistUri, playlistName, id, "");
         token = (String) getIntent().getExtras().get("token");
-        TextView name = findViewById(R.id.playlist_activity_name_textView);
-        name.setText(model.name);
+        TextView name = findViewById(R.id.playlist_name_textview);
+        // name.setText(model.name);
+        CollapsingToolbarLayout toolBarLayout = (CollapsingToolbarLayout) findViewById(R.id.toolbar_layout);
+        toolBarLayout.setTitle(model.name);
+        toolBarLayout.setCollapsedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
+        toolBarLayout.setExpandedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
 
         // Recycler View
-        songRecycler = findViewById(R.id.playlist_activity_song_recycler);
+        songRecycler = findViewById(R.id.test_recycler_view);
         songRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
         // ArrayList init
@@ -117,6 +133,12 @@ public class PlaylistActivity extends AppCompatActivity {
                                 Image i = track.track.album.images.get(0);
                                 System.out.println(i.url);
                                 Track t = new Track(track.track.uri, track.track.id, model.uri, track.track.name, (int) track.track.duration_ms, i.url);
+                                String artists = "";
+                                for (ArtistSimple artist: track.track.artists){
+                                    artists += artist.name; //  + ", ";
+                                    break;
+                                }
+                                t.artist = artists;
                                 song_list.add(t);
                                 System.out.println(t.name);
                             }
@@ -145,6 +167,7 @@ public class PlaylistActivity extends AppCompatActivity {
 
         }
     }
+
 
     @Override
     protected void onStart() {
@@ -192,28 +215,30 @@ public class PlaylistActivity extends AppCompatActivity {
                 // Update Fields
                 Track songModel = song_list.get(position);
                 holder.name.setText(songModel.name);
+                holder.artist.setText(songModel.artist);
+                Picasso.get().load(songModel.imageUrl).into(holder.image);
 
-                Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            System.out.println(songModel.imageUrl + " is the url");
-                            URL url = new URL(songModel.imageUrl);
-                            Bitmap bitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    holder.image.setImageBitmap(bitmap);
-                                }
-                            });
-                        } catch (MalformedURLException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                };
-                new Thread(r).start();
+//                Runnable r = new Runnable() {
+//                    @Override
+//                    public void run() {
+//                        try {
+//                            System.out.println(songModel.imageUrl + " is the url");
+//                            URL url = new URL(songModel.imageUrl);
+//                            Bitmap bitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
+//                            runOnUiThread(new Runnable() {
+//                                @Override
+//                                public void run() {
+//                                    holder.image.setImageBitmap(bitmap);
+//                                }
+//                            });
+//                        } catch (MalformedURLException e) {
+//                            e.printStackTrace();
+//                        } catch (IOException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                };
+//                new Thread(r).start();
 
                 // onclick
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -347,17 +372,18 @@ public class PlaylistActivity extends AppCompatActivity {
             System.out.println(except.getMessage());
             return "";
         }
+
     }
 
-
-
-
-
-
+    @Override
+    public boolean onSupportNavigateUp() {
+        onBackPressed();
+        return true;
+    }
 
     // Class for Adapter
     public static class FindSong extends RecyclerView.ViewHolder{
-        TextView name;
+        TextView name, artist;
         ImageView image;
 
         public FindSong(@NonNull View itemView) {
@@ -366,6 +392,7 @@ public class PlaylistActivity extends AppCompatActivity {
             // Update fields
             image = itemView.findViewById(R.id.song_template_imageView);
             name = itemView.findViewById(R.id.song_template_name_textView);
+            artist = itemView.findViewById(R.id.song_template_artist_textView);
         }
     }
 

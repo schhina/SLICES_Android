@@ -196,6 +196,7 @@ public class MainActivity extends AppCompatActivity {
                         intent.putExtra("playlistUri", model.uri);
                         intent.putExtra("playlistId", model.id);
                         intent.putExtra("token", token);
+                        intent.putExtra("image", model.imageUrl);
                         startActivity(intent);
                     }
                 });
@@ -302,7 +303,7 @@ public class MainActivity extends AppCompatActivity {
 
     // Method to go to the Settings page
     public void goToSettings(View v){
-        // TODO
+        startActivity(new Intent(getApplicationContext(), PlaylistTestActivity.class));
     }
 
     // Adapter Helper Class

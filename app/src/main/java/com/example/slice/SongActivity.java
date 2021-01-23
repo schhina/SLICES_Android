@@ -2,9 +2,11 @@ package com.example.slice;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
@@ -13,11 +15,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.crystal.crystalrangeseekbar.interfaces.OnRangeSeekbarChangeListener;
 import com.crystal.crystalrangeseekbar.widgets.CrystalRangeSeekbar;
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -25,6 +30,7 @@ import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Result;
 import com.spotify.protocol.types.Empty;
 import com.spotify.protocol.types.PlayerState;
+import com.squareup.picasso.Picasso;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -69,18 +75,32 @@ public class SongActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_song);
+        Toolbar toolbar = findViewById(R.id.song_toolbar);;
+        setSupportActionBar(toolbar);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+
 
         // Init song and playlist fields
         String songUri = (String) getIntent().getExtras().get("SongUri");
         String songName = (String) getIntent().getExtras().get("SongName");
         int duration = (int) getIntent().getExtras().get("SongDuration");
         String SongID = (String) getIntent().getExtras().get("SongID");
+        String imageUrl = getIntent().getExtras().getString("image");
+        String artist = getIntent().getExtras().getString("artist");
         playlistUri = (String) getIntent().getExtras().get("PlaylistUri");
-        model = new Track(songUri, SongID, playlistUri, songName, duration, "");
+        model = new Track(songUri, SongID, playlistUri, songName, duration, imageUrl);
+        model.artist = artist;
 
         // Init Views
-        name = findViewById(R.id.song_activity_name_textView);
-        name.setText(model.name);
+        CollapsingToolbarLayout toolBarLayout = (CollapsingToolbarLayout) findViewById(R.id.song_collapsing_toolbar);
+        toolBarLayout.setTitle(model.name + " - " + model.artist);
+        toolBarLayout.setCollapsedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
+        toolBarLayout.setExpandedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
+
+
+//        ImageView image = findViewById(R.id.song_image);
+//        Picasso.get().load(imageUrl).into(image);
 
         // Init recycler
         sliceRecycler = findViewById(R.id.song_activity_slice_recycler);
@@ -112,7 +132,7 @@ public class SongActivity extends AppCompatActivity {
                 holder.seekbar.apply();
                 holder.left.setText(left/1000.0 + "");
                 holder.right.setText(right/1000.0 + "");
-                holder.number.setText("Slice #" + slice.number);
+                // holder.number.setText("Slice #" + slice.number);
                 holder.seekbar.setMaxValue((float) (model.duration_ms/1000.0));
                 holder.seekbar.setMinStartValue((float) (left/1000.0));
                 holder.seekbar.setMaxStartValue((float) (right/1000.0));
@@ -260,6 +280,12 @@ public class SongActivity extends AppCompatActivity {
                     }
                 });
 
+    }
+
+    @Override
+    public boolean onSupportNavigateUp() {
+        onBackPressed();
+        return true;
     }
 
     // Load the slices from the json into the arraylist
@@ -477,7 +503,6 @@ public class SongActivity extends AppCompatActivity {
             super(itemView);
             left = itemView.findViewById(R.id.slisce_template_left_time_EditText);
             right = itemView.findViewById(R.id.slice_template_right_time_EditText);
-            number = itemView.findViewById(R.id.slice_template_name_textView);
             // save = itemView.findViewById(R.id.slice_template_save_button);
             delete = itemView.findViewById(R.id.slice_template_delete_button);
             seekbar = itemView.findViewById(R.id.slice_template_range_seekbar);

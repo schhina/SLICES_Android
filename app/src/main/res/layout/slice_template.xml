@@ -17,34 +17,23 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <TextView
-        android:id="@+id/slice_template_name_textView"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="2dp"
-        android:layout_marginLeft="2dp"
-        android:layout_marginTop="16dp"
-        android:layout_marginEnd="351dp"
-        android:layout_marginRight="351dp"
-        android:text="Slice #"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
-
     <EditText
         android:id="@+id/slisce_template_left_time_EditText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="32dp"
+        android:layout_marginTop="68dp"
+        android:typeface="monospace"
+        android:textColor="#ffffff"
         android:numeric="decimal"
         android:text="0"
+        android:background="@android:color/transparent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/slice_template_name_textView" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <EditText
         android:id="@+id/slice_template_right_time_EditText"
+        style="@style/Widget.AppCompat.AutoCompleteTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginStart="295dp"
@@ -55,6 +44,9 @@
         android:layout_marginBottom="1dp"
         android:numeric="decimal"
         android:text="-1"
+        android:background="@android:color/transparent"
+        android:textColor="#fff"
+        android:typeface="monospace"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/slisce_template_left_time_EditText"
@@ -63,14 +55,14 @@
 
     <Button
         android:id="@+id/slice_template_delete_button"
-        android:layout_width="61dp"
-        android:layout_height="36dp"
-        android:layout_marginStart="288dp"
-        android:layout_marginLeft="288dp"
+        android:layout_width="41dp"
+        android:layout_height="41dp"
+        android:layout_marginStart="352dp"
+        android:layout_marginLeft="352dp"
         android:layout_marginTop="4dp"
-        android:text="Delete"
+        android:background="@drawable/ic_baseline_close_24"
         android:textSize="10dp"
-        app:layout_constraintStart_toEndOf="@+id/slice_template_name_textView"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

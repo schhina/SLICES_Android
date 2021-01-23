@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.core.widget.NestedScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior"
+    tools:context=".SongActivity"
+    android:background="#242424"
+    tools:showIn="@layout/activity_song">
+
+    <!--    <TextView-->
+    <!--        android:layout_width="wrap_content"-->
+    <!--        android:layout_height="wrap_content"-->
+    <!--        android:layout_margin="@dimen/text_margin"-->
+    <!--        android:text="@string/large_text" />-->
+
+    <LinearLayout
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal">
+
+            <Button
+                android:background="@drawable/button_background"
+                android:id="@+id/song_save_button"
+                android:onClick="saveData"
+                android:text="Save"
+                android:layout_marginRight="20dp"
+                android:layout_width="wrap_content"
+                android:layout_weight="10"
+                android:fontFamily="monospace"
+                android:layout_height="wrap_content" />
+
+            <Button
+                android:id="@+id/song_play_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="center"
+                android:layout_marginRight="20dp"
+                android:layout_weight="10"
+                android:background="@drawable/button_background"
+                android:fontFamily="monospace"
+                android:gravity="center"
+                android:onClick="playSong"
+                android:text="Play"
+                android:textColor="#000000" />
+
+            <Button
+                android:id="@+id/song_add_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="end"
+                android:layout_weight="10"
+                android:background="@drawable/button_background"
+                android:fontFamily="monospace"
+                android:onClick="addSlice"
+                android:text="Add Slice"
+                android:textColor="#000000" />
+
+        </LinearLayout>
+
+        <edmt.dev.advancednestedscrollview.MaxHeightRecyclerView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:id="@+id/song_activity_slice_recycler">
+
+        </edmt.dev.advancednestedscrollview.MaxHeightRecyclerView>
+
+        <!--        <View-->
+        <!--            android:layout_width="match_parent"-->
+        <!--            android:layout_height="6dp"-->
+        <!--            android:id="@+id/test_card_header_shadow"-->
+        <!--            android:alpha="0"-->
+        <!--            android:background="@drawable/toolbar_shadow">-->
+
+        <!--        </View>-->
+    </LinearLayout>
+
+
+</androidx.core.widget.NestedScrollView>

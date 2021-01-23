@@ -1,22 +1,26 @@
 package com.example.slice;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.spotify.android.appremote.api.ConnectionParams;
@@ -39,8 +43,6 @@ import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.net.MalformedURLException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -80,6 +82,10 @@ public class PlaylistActivity extends AppCompatActivity {
     RecyclerView songRecycler;
     RecyclerView.Adapter <FindSong> songAdapter;
     ArrayList<Track> song_list = new ArrayList<>();
+
+    // Clearing Slices Dialog stuff
+    private AlertDialog.Builder clearDataDialogBuilder;
+    private AlertDialog clearDataDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -249,8 +255,9 @@ public class PlaylistActivity extends AppCompatActivity {
                         i.putExtra("SongName", songModel.name);
                         i.putExtra("SongDuration", songModel.duration_ms);
                         i.putExtra("SongID", songModel.id);
-
+                        i.putExtra("image", songModel.imageUrl);
                         i.putExtra("PlaylistUri", model.uri);
+                        i.putExtra("artist", songModel.artist);
                         startActivity(i);
                     }
                 });
@@ -295,9 +302,54 @@ public class PlaylistActivity extends AppCompatActivity {
         });
     }
 
-    public void backToHome(View v){
-        Intent i = new Intent(getApplicationContext(), MainActivity.class);
-        startActivity(i);
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_playlist_activity, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_clear_playlist:
+                Toast.makeText(getApplicationContext(), "Gonna clear slices", Toast.LENGTH_SHORT).show();
+
+
+                clearDataDialogBuilder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.myDialog));
+                final View popUpView = getLayoutInflater().inflate(R.layout.clear_playlist_popup, null);
+                Button confirm = popUpView.findViewById(R.id.clear_playlist_confirm_button);
+                Button decline = popUpView.findViewById(R.id.clear_playlist_decline_button);
+
+                confirm.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        clear();
+                        Toast.makeText(getApplicationContext(), "Cleared Slice data", Toast.LENGTH_SHORT).show();
+                        clearDataDialog.dismiss();
+                    }
+                });
+
+                decline.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        clearDataDialog.dismiss();
+                    }
+                });
+
+
+                clearDataDialogBuilder.setView(popUpView);
+                clearDataDialog = clearDataDialogBuilder.create();
+                clearDataDialog.show();
+
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
     }
 
     public void play(View v) {
@@ -318,7 +370,7 @@ public class PlaylistActivity extends AppCompatActivity {
         thread.start();
     }
 
-    public void clear(View v){
+    public void clear(){
         // Clear all existing slices for the playlist
         try {
             String json = getSlices();

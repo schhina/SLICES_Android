@@ -2,8 +2,6 @@ package com.example.slice;
 
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
-import com.google.android.material.snackbar.Snackbar;
-import com.google.gson.JsonObject;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -22,11 +20,9 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
-import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Typeface;
 import android.os.Bundle;
-import android.os.Parcelable;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
@@ -82,10 +78,8 @@ public class MainActivity extends AppCompatActivity {
     int total_playlists = 0;
 
     // Pop up stuff
-    private AlertDialog.Builder dialogBuilder;
-    private AlertDialog dialog;
-    private AlertDialog.Builder dialogBuilderAddPlace;
-    private AlertDialog dialogAddPlace;
+    private AlertDialog.Builder clearDataDialogBuilder;
+    private AlertDialog clearDataDialog;
 
 
 
@@ -143,40 +137,37 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(getApplicationContext(), "Gonna clear slices", Toast.LENGTH_SHORT).show();
 
 
-                dialogBuilderAddPlace = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.myDialog));
+                clearDataDialogBuilder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.myDialog));
                 final View popUpView = getLayoutInflater().inflate(R.layout.clear_all_slices_popup, null);
-                Button confirm = popUpView.findViewById(R.id.clear_all_confirm_button);
-                Button decline = popUpView.findViewById(R.id.clear_all_decline_button);
+                Button confirm = popUpView.findViewById(R.id.clear_all_confirm);
+                Button decline = popUpView.findViewById(R.id.clear_all_decline);
 
                 confirm.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         clear();
                         Toast.makeText(getApplicationContext(), "Cleared Slice data", Toast.LENGTH_SHORT).show();
-                        dialogAddPlace.dismiss();
+                        clearDataDialog.dismiss();
                     }
                 });
 
                 decline.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
-                        dialogAddPlace.dismiss();
+                        clearDataDialog.dismiss();
                     }
                 });
 
 
-                dialogBuilderAddPlace.setView(popUpView);
-                dialogAddPlace = dialogBuilderAddPlace.create();
-                dialogAddPlace.show();
+                clearDataDialogBuilder.setView(popUpView);
+                clearDataDialog = clearDataDialogBuilder.create();
+                clearDataDialog.show();
 
                 return true;
 
             case R.id.action_about:
                 Toast.makeText(getApplicationContext(), "gonna go to about page on website", Toast.LENGTH_SHORT).show();
-                return true;
-
-            case R.id.action_logout:
-                Toast.makeText(getApplicationContext(), "Logout", Toast.LENGTH_SHORT).show();
+                startActivity(new Intent(getApplicationContext(), Song_Scrolling_Activity.class));
                 return true;
 
             default:

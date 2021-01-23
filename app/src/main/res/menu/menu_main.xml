@@ -9,11 +9,6 @@
         android:title="Clear Slices"
         app:showAsAction="never"/>
     <item
-        android:id="@+id/action_logout"
-        android:orderInCategory="200"
-        android:title="Log out of Spotify"
-        app:showAsAction="never"/>
-    <item
         android:id="@+id/action_about"
         android:orderInCategory="250"
         android:title="About us"

@@ -23,7 +23,7 @@
             android:fitsSystemWindows="true"
             app:contentScrim="#242424"
             app:layout_scrollFlags="scroll|exitUntilCollapsed"
-            app:toolbarId="@+id/toolbar">
+            app:toolbarId="@+id/toolbar_playlist">
 
             <androidx.appcompat.widget.Toolbar
                 android:id="@+id/toolbar_playlist"

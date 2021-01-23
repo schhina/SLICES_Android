@@ -1,5 +1,9 @@
 package com.example.slice;
 
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.snackbar.Snackbar;
+import com.google.gson.JsonObject;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -7,9 +11,12 @@ import com.spotify.android.appremote.api.SpotifyAppRemote;
 import com.spotify.sdk.android.authentication.AuthenticationClient;
 import com.spotify.sdk.android.authentication.AuthenticationRequest;
 import com.spotify.sdk.android.authentication.AuthenticationResponse;
+import com.squareup.picasso.Picasso;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -17,12 +24,17 @@ import androidx.recyclerview.widget.RecyclerView;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.os.Parcelable;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -32,10 +44,17 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Iterator;
 
 import kaaes.spotify.webapi.android.SpotifyApi;
 import kaaes.spotify.webapi.android.SpotifyCallback;
@@ -62,6 +81,12 @@ public class MainActivity extends AppCompatActivity {
     int offset = 0;
     int total_playlists = 0;
 
+    // Pop up stuff
+    private AlertDialog.Builder dialogBuilder;
+    private AlertDialog dialog;
+    private AlertDialog.Builder dialogBuilderAddPlace;
+    private AlertDialog dialogAddPlace;
+
 
 
     // Recycler View Stuff
@@ -73,6 +98,20 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        // Toolbar Stuff
+        Toolbar toolbar = findViewById(R.id.toolbar_main_activity);;
+        setSupportActionBar(toolbar);
+//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+//        getSupportActionBar().setDisplayShowHomeEnabled(true);
+        CollapsingToolbarLayout toolBarLayout =  findViewById(R.id.toolbar_layout);
+        toolBarLayout.setTitle(getTitle());
+        toolBarLayout.setCollapsedTitleTypeface(Typeface.create("monospace", Typeface.BOLD));
+        toolBarLayout.setExpandedTitleTypeface(Typeface.create("monospace", Typeface.BOLD));
+
+        AppBarLayout appBar = findViewById(R.id.app_bar);
+        appBar.setExpanded(false);
+
 
         // Recycler View init
         LinearLayoutManager layoutManager = new LinearLayoutManager(getApplicationContext());
@@ -89,6 +128,65 @@ public class MainActivity extends AppCompatActivity {
 
 
     }
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_clear:
+                Toast.makeText(getApplicationContext(), "Gonna clear slices", Toast.LENGTH_SHORT).show();
+
+
+                dialogBuilderAddPlace = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.myDialog));
+                final View popUpView = getLayoutInflater().inflate(R.layout.clear_all_slices_popup, null);
+                Button confirm = popUpView.findViewById(R.id.clear_all_confirm_button);
+                Button decline = popUpView.findViewById(R.id.clear_all_decline_button);
+
+                confirm.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        clear();
+                        Toast.makeText(getApplicationContext(), "Cleared Slice data", Toast.LENGTH_SHORT).show();
+                        dialogAddPlace.dismiss();
+                    }
+                });
+
+                decline.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View view) {
+                        dialogAddPlace.dismiss();
+                    }
+                });
+
+
+                dialogBuilderAddPlace.setView(popUpView);
+                dialogAddPlace = dialogBuilderAddPlace.create();
+                dialogAddPlace.show();
+
+                return true;
+
+            case R.id.action_about:
+                Toast.makeText(getApplicationContext(), "gonna go to about page on website", Toast.LENGTH_SHORT).show();
+                return true;
+
+            case R.id.action_logout:
+                Toast.makeText(getApplicationContext(), "Logout", Toast.LENGTH_SHORT).show();
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
+    }
+
 
     // Get token
     @Override
@@ -165,26 +263,7 @@ public class MainActivity extends AppCompatActivity {
                 // init list item with data
                 Playlist model = playlist_list.get(position);
                 holder.name.setText(model.name);
-                Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            URL url = new URL(model.imageUrl);
-                            Bitmap bitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-                            runOnUiThread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    holder.image.setImageBitmap(bitmap);
-                                }
-                            });
-                        } catch (MalformedURLException e) {
-                            e.printStackTrace();
-                        } catch (IOException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                };
-                new Thread(r).start();
+                Picasso.get().load(model.imageUrl).into(holder.image);
 
                 // on Click
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -301,10 +380,82 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    // Method to go to the Settings page
-    public void goToSettings(View v){
-        startActivity(new Intent(getApplicationContext(), PlaylistTestActivity.class));
+
+    public void clear(){
+        // Clear all existing slices for the playlist
+        try {
+            String json = getSlices();
+            JSONObject jsonObject = (json.equals("")) ? new JSONObject() : new JSONObject(json);
+            if (json.equals("")) {
+                System.out.println("couldn't find the json");
+                return;
+            }
+            Iterator<String> keys = jsonObject.keys();
+            ArrayList<String> uris = new ArrayList<>();
+            while(keys.hasNext()) {
+                String key = keys.next();
+                uris.add(key);
+            }
+            System.out.println("about to remove");
+            for( String s : uris){
+                jsonObject.remove(s);
+            }
+            String o = jsonObject.toString();
+            save(o);
+        }
+//        catch(java.util.ConcurrentModificationException e){
+//            System.out.println("List was being modified somehow");
+//            clear();
+//        }
+        catch(JSONException j){
+            j.printStackTrace();
+        }
     }
+
+    public void save(String s){
+        // Save the passed json into the file
+        try {
+            File file = new File(getApplicationContext().getFilesDir(), "JSON_SLICES");
+            FileWriter fileWriter = new FileWriter(file);
+            BufferedWriter bufferedWriter = new BufferedWriter(fileWriter);
+            bufferedWriter.write(s);
+            bufferedWriter.close();
+        }
+        catch(IOException e){
+            e.printStackTrace();
+        }
+    }
+
+    public String getSlices() {
+        // Read the json file and return it as a string
+        try {
+            File file = new File(getApplicationContext().getFilesDir(), "JSON_SLICES");
+            FileReader fileReader = new FileReader(file);
+            BufferedReader bufferedReader = new BufferedReader(fileReader);
+            StringBuilder stringBuilder = new StringBuilder();
+            String line = bufferedReader.readLine();
+            while (line != null) {
+                stringBuilder.append(line).append("\n");
+                line = bufferedReader.readLine();
+            }
+            bufferedReader.close();
+            String response = stringBuilder.toString();
+            return response;
+        }
+        catch(FileNotFoundException notFound){
+            System.out.println("File not found");
+            return "";
+        }
+        catch(IOException except){
+            System.out.println(except.getMessage());
+            return "";
+        }
+
+    }
+
+
+
+
 
     // Adapter Helper Class
     public static class FindPlaylist extends RecyclerView.ViewHolder{

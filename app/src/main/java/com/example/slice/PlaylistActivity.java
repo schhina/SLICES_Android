@@ -4,6 +4,7 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -17,12 +18,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.snackbar.Snackbar;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -84,6 +87,7 @@ public class PlaylistActivity extends AppCompatActivity {
     RecyclerView songRecycler;
     RecyclerView.Adapter <FindSong> songAdapter;
     ArrayList<Track> song_list = new ArrayList<>();
+    NestedScrollView scrollView;
 
     // Clearing Slices Dialog stuff
     private AlertDialog.Builder clearDataDialogBuilder;
@@ -116,6 +120,7 @@ public class PlaylistActivity extends AppCompatActivity {
         toolBarLayout.setTitle(model.name);
         toolBarLayout.setCollapsedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
         toolBarLayout.setExpandedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
+        scrollView = findViewById(R.id.playlist_scroll);
 
         // Recycler View
         songRecycler = findViewById(R.id.test_recycler_view);
@@ -228,29 +233,8 @@ public class PlaylistActivity extends AppCompatActivity {
                 Track songModel = song_list.get(position);
                 holder.name.setText(songModel.name);
                 holder.artist.setText(songModel.artist);
-                Picasso.get().load(songModel.imageUrl).into(holder.image);
-
-//                Runnable r = new Runnable() {
-//                    @Override
-//                    public void run() {
-//                        try {
-//                            System.out.println(songModel.imageUrl + " is the url");
-//                            URL url = new URL(songModel.imageUrl);
-//                            Bitmap bitmap = BitmapFactory.decodeStream(url.openConnection().getInputStream());
-//                            runOnUiThread(new Runnable() {
-//                                @Override
-//                                public void run() {
-//                                    holder.image.setImageBitmap(bitmap);
-//                                }
-//                            });
-//                        } catch (MalformedURLException e) {
-//                            e.printStackTrace();
-//                        } catch (IOException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                };
-//                new Thread(r).start();
+                if (!songModel.imageUrl.equals("")) Picasso.get().load(songModel.imageUrl).into(holder.image);
+                else holder.image.setVisibility(View.INVISIBLE);
 
                 // onclick
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
@@ -282,12 +266,15 @@ public class PlaylistActivity extends AppCompatActivity {
         System.out.println(songAdapter.getItemCount() + " is the number of songs in this playlist");
 
         // Check if recycler is at bottom of list
-        songRecycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        scrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
             @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
+            public void onScrollChanged() {
+                View view = (View) scrollView.getChildAt(scrollView.getChildCount() - 1);
 
-                if (!songRecycler.canScrollVertically(1) && waiting){
+                int diff = (view.getBottom() - (scrollView.getHeight() + scrollView
+                        .getScrollY()));
+
+                if (diff == 0) {
                     boolean running = false;
                     for (Thread t : Thread.getAllStackTraces().keySet()) {
                         System.out.println(t.getName());
@@ -296,23 +283,19 @@ public class PlaylistActivity extends AppCompatActivity {
                             break;
                         }
                     }
-                    if (!running){
+                    if (!running && song_list.size() != song_total){
+                        Snackbar.make(view, "Fetching more songs", Snackbar.LENGTH_SHORT).show();
                         AddSongsThread thread = new AddSongsThread();
                         thread.setName("AddingSongsToPlaylistThread");
                         thread.start();
                         // Toast.makeText(getApplicationContext(), (addMoreToRecycle() ? "added more to list" : "couldnt add more"), Toast.LENGTH_SHORT).show();
                     }
-
                 }
             }
         });
+
     }
 
-    @Override
-    protected void onStop() {
-        super.onStop();
-        // SpotifyAppRemote.disconnect(mSpotifyAppRemote);
-    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -500,8 +483,21 @@ public class PlaylistActivity extends AppCompatActivity {
                                 if (item.has("track")){
                                     JSONObject track = item.getJSONObject("track");
                                     try{
-                                        JSONObject image = (JSONObject) track.getJSONArray("images").get(0);
-                                        Track t = new Track(track.getString("uri"), track.getString("id"), model.uri, track.getString("name"), track.getInt("duration_ms"), image.getString("url"));
+                                        Track t = new Track(track.getString("uri"), track.getString("id"), model.uri, track.getString("name"), track.getInt("duration_ms"), "");
+                                        if (track.has("album")){
+                                            JSONObject album = track.getJSONObject("album");
+                                            if (album.has("images")) {
+                                                JSONObject image = (JSONObject) album.getJSONArray("images").get(0);
+                                                t.imageUrl = image.getString("url");
+                                            }
+                                        }
+                                        if (track.has("artists")){
+                                            JSONObject artist = track.getJSONArray("artists").getJSONObject(0);
+                                            t.artist = artist.getString("name");
+                                        }
+                                        System.out.println("Added " + t.name + " to the list");
+                                        System.out.println("It's image url is " + t.imageUrl);
+                                        System.out.println("It's artist name is " + t.artist);
                                         song_list.add(t);
 
                                     }

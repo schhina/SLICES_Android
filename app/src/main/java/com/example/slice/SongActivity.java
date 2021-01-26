@@ -302,10 +302,11 @@ public class SongActivity extends AppCompatActivity {
         };
 
         sliceRecycler.setAdapter(sliceAdapter);
+        System.out.println(sliceAdapter.getItemCount());
 
         // TODO: Find a stable way to not make slice lists over 5 break the seekbars
         sliceRecycler.getRecycledViewPool().setMaxRecycledViews(0,50);
-        System.out.println(sliceAdapter.getItemCount());
+
 
 
         // Spotify stuff

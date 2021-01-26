@@ -9,14 +9,16 @@
         android:id="@+id/song_template_name_textView"
         android:layout_width="123dp"
         android:layout_height="38dp"
-        android:text="TextView"
+        android:layout_marginBottom="10dp"
         android:fontFamily="@string/font_type"
+        android:text="TextView"
         android:textColor="@color/browser_actions_bg_grey"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintHorizontal_bias="0.06"
         app:layout_constraintStart_toEndOf="@+id/song_template_imageView"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
 
     <ImageView
         android:id="@+id/song_template_imageView"
@@ -32,12 +34,14 @@
         android:id="@+id/song_template_artist_textView"
         android:layout_width="158dp"
         android:layout_height="38dp"
-        android:text="Artist Name"
+        android:layout_marginBottom="10dp"
         android:fontFamily="@string/font_type"
+        android:text="Artist Name"
         android:textColor="@color/browser_actions_bg_grey"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/song_template_name_textView"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

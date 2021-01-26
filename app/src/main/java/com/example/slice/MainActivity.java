@@ -2,6 +2,7 @@ package com.example.slice;
 
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.snackbar.Snackbar;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -15,6 +16,8 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.view.ViewCompat;
+import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.DividerItemDecoration;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
@@ -30,6 +33,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -87,6 +91,7 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView playlistRecycler;
     RecyclerView.Adapter<FindPlaylist> playlistAdapter;
     ArrayList<Playlist> playlist_list = new ArrayList<>();
+    NestedScrollView scrollView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -113,6 +118,9 @@ public class MainActivity extends AppCompatActivity {
         playlistRecycler.setLayoutManager(layoutManager);
         DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(playlistRecycler.getContext(), layoutManager.getOrientation());
         playlistRecycler.addItemDecoration(dividerItemDecoration);
+        scrollView = findViewById(R.id.main_nested_scroll);
+        // ViewCompat.setNestedScrollingEnabled(playlistRecycler, false);
+
 
 
         // Arraylist init
@@ -281,25 +289,29 @@ public class MainActivity extends AppCompatActivity {
         playlistRecycler.setAdapter(playlistAdapter);
         System.out.println(playlistAdapter.getItemCount());
 
-        // If the user is at the bottom of the recycler View, do this
-        playlistRecycler.addOnScrollListener(new RecyclerView.OnScrollListener() {
+        // If the user is at the bottom of the list, do this
+        scrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
             @Override
-            public void onScrollStateChanged(@NonNull RecyclerView recyclerView, int newState) {
-                super.onScrollStateChanged(recyclerView, newState);
+            public void onScrollChanged() {
+                View view = (View) scrollView.getChildAt(scrollView.getChildCount() - 1);
 
-                if (!playlistRecycler.canScrollVertically(1)){
+                int diff = (view.getBottom() - (scrollView.getHeight() + scrollView
+                        .getScrollY()));
+
+                if (diff == 0) {
                     boolean running = false;
 
                     // Check for any threads looking for playlists
                     for (Thread t : Thread.getAllStackTraces().keySet()) {
-                        System.out.println(t.getName());
+                        // System.out.println(t.getName());
                         if (t.getName().equals("AddPlaylists")) {
                             running = true;
                             break;
                         }
                     }
                     // Look for new playlists and start a thread for it
-                    if (!running){
+                    if (!running && playlist_list.size() != total_playlists){
+                        Snackbar.make(view, "Fetching more playlists", Snackbar.LENGTH_SHORT).show();
                         FindMorePlaylistsThread thread = new FindMorePlaylistsThread();
                         thread.setName("AddPlaylists");
                         thread.start();
@@ -307,6 +319,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+
     }
 
 

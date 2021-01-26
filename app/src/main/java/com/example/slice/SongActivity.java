@@ -8,6 +8,8 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
@@ -23,6 +25,7 @@ import com.crystal.crystalrangeseekbar.interfaces.OnRangeSeekbarChangeListener;
 import com.crystal.crystalrangeseekbar.widgets.CrystalRangeSeekbar;
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.snackbar.Snackbar;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
@@ -62,6 +65,7 @@ public class SongActivity extends AppCompatActivity {
     private RecyclerView sliceRecycler;
     private RecyclerView.Adapter <FindSlice> sliceAdapter;
     private ArrayList<Slice> slices = new ArrayList<>();
+    boolean first = true;
 
     // Spotify Stuff
     private SpotifyAppRemote mSpotifyAppRemote;
@@ -105,7 +109,7 @@ public class SongActivity extends AppCompatActivity {
         // Init recycler
         sliceRecycler = findViewById(R.id.song_activity_slice_recycler);
         sliceRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
-
+        load();
     }
 
     @Override
@@ -124,18 +128,20 @@ public class SongActivity extends AppCompatActivity {
             @Override
             public void onBindViewHolder(@NonNull FindSlice holder, int position) {
                 // Init Fields
+
                 Slice slice = slices.get(position);
                 int left = slice.times[0];
                 int right = slice.times[1];
-                System.out.println((slice.times[0]));
-                holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
-                holder.seekbar.apply();
+                // System.out.println((slice.times[0]));
+                final boolean[] init = {true};
                 holder.left.setText(left/1000.0 + "");
                 holder.right.setText(right/1000.0 + "");
                 // holder.number.setText("Slice #" + slice.number);
+                holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
                 holder.seekbar.setMaxValue((float) (model.duration_ms/1000.0));
-                holder.seekbar.setMinStartValue((float) (left/1000.0));
-                holder.seekbar.setMaxStartValue((float) (right/1000.0));
+//                holder.seekbar.setMinValue(0);
+                holder.seekbar.setMinStartValue((float) (slices.get(position).times[0]/1000.0));
+                holder.seekbar.setMaxStartValue((float) (slices.get(position).times[1]/1000.0));
                 holder.seekbar.apply();
                 System.out.println( "slice starts at " + left/1000.0);
 
@@ -145,7 +151,7 @@ public class SongActivity extends AppCompatActivity {
                     public void onClick(View v) {
                         try {
                             slices.remove(position);
-                            save();
+                            save(false);
                             sliceAdapter.notifyDataSetChanged();
                         } catch (JSONException e) {
                             e.printStackTrace();
@@ -180,14 +186,19 @@ public class SongActivity extends AppCompatActivity {
                 holder.seekbar.setOnRangeSeekbarChangeListener(new OnRangeSeekbarChangeListener() {
                     @Override
                     public void valueChanged(Number minValue, Number maxValue) {
-                        holder.left.setText(minValue + "");
-                        holder.right.setText(maxValue + "");
+                        System.out.println(position + " got moved a bit");
+                        if (!closeEnough(parseDouble(holder.left.getText().toString()), minValue.doubleValue()) ||
+                        !closeEnough(parseDouble(holder.right.getText().toString()), maxValue.doubleValue())){
+                            System.out.println("not close enought");
+                            holder.left.setText(minValue + "");
+                            holder.right.setText(maxValue + "");
+                        }
                         int left = (int) (holder.seekbar.getSelectedMinValue().doubleValue()*1000);
                         int right = (int) (holder.seekbar.getSelectedMaxValue().doubleValue()*1000);
                         // System.out.println("left is " + left);
-                        slices.get(position).times[0] = left;
-                        slices.get(position).times[1] = right;
-
+                        update(position, left, right);
+//                        slices.get(position).times[0] = left;
+//                        slices.get(position).times[1] = right;
 //                            try {
 ////                            if (!slice.isSaved()) {
 ////                                save(left, right);
@@ -204,6 +215,39 @@ public class SongActivity extends AppCompatActivity {
                 });
 
                 // When the left edittext is updated;
+//                holder.left.addTextChangedListener(new TextWatcher() {
+//                    @Override
+//                    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//
+//                    }
+//
+//                    @Override
+//                    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
+//                        System.out.println("Left is being changed atm");
+//
+//                    }
+//
+//                    @Override
+//                    public void afterTextChanged(Editable editable) {
+//                        System.out.println("Left was changed");
+//                        System.out.println("Left got updated to " + holder.left.getText().toString());
+//                        int left = (int) (parseDouble(holder.left.getText().toString())*1000);
+//                        System.out.println("left is " + left);
+//                        slices.get(position).times[0] = left;
+//                        // holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
+//                        if (!closeEnough(holder.seekbar.getSelectedMinValue().intValue(), left)){
+//                            System.out.println("also not close enough");
+//                            holder.seekbar.setMinStartValue((float) (left/1000.0));
+//                            holder.seekbar.setMaxStartValue((float) (slices.get(position).times[1]/1000.0));
+//                            holder.seekbar.apply();
+//                        }
+//                        try {
+//                            save();
+//                        } catch (JSONException e) {
+//                            e.printStackTrace();
+//                        }
+//                    }
+//                });
                 holder.left.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                     @Override
                     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -212,10 +256,14 @@ public class SongActivity extends AppCompatActivity {
                         System.out.println("left is " + left);
                         slices.get(position).times[0] = left;
                         // holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
-                        holder.seekbar.setMinStartValue((float) (left/1000.0));
-                        holder.seekbar.apply();
+                        if (!closeEnough(holder.seekbar.getSelectedMinValue().intValue(), left)) {
+                            holder.seekbar.setMinStartValue((float) (left / 1000.0));
+                            holder.seekbar.setMaxStartValue((float) (slices.get(position).times[1] / 1000.0));
+                            holder.seekbar.apply();
+                        }
+
                         try {
-                            save();
+                            save(true);
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -230,11 +278,14 @@ public class SongActivity extends AppCompatActivity {
                         System.out.println("Right got updtated to " + holder.right.getText().toString());
                         int right = (int) (parseDouble(holder.right.getText().toString())*1000);
                         slices.get(position).times[1] = right;
-                        holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
-                        holder.seekbar.setMaxStartValue((float) (right/1000.0));
-                        holder.seekbar.apply();
+                        if (!closeEnough(holder.seekbar.getSelectedMaxValue().intValue(), right)) {
+                            holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
+                            holder.seekbar.setMinStartValue((float) (slices.get(position).times[0] / 1000.0));
+                            holder.seekbar.setMaxStartValue((float) (right / 1000.0));
+                            holder.seekbar.apply();
+                        }
                         try {
-                            save();
+                            save(true);
                         } catch (JSONException e) {
                             e.printStackTrace();
                         }
@@ -251,8 +302,11 @@ public class SongActivity extends AppCompatActivity {
         };
 
         sliceRecycler.setAdapter(sliceAdapter);
+
+        // TODO: Find a stable way to not make slice lists over 5 break the seekbars
+        sliceRecycler.getRecycledViewPool().setMaxRecycledViews(0,50);
         System.out.println(sliceAdapter.getItemCount());
-        load();
+
 
         // Spotify stuff
         ConnectionParams connectionParams =
@@ -282,6 +336,19 @@ public class SongActivity extends AppCompatActivity {
 
     }
 
+    public void update(int p, int l, int r){
+        System.out.println("Updating position " + p + " with values " + l + " and " + r);
+//
+        slices.get(p).times[0] = l;
+        slices.get(p).times[1] = r;
+    }
+
+    public boolean closeEnough(double l, double r){
+        double val = l - r;
+        if (val < 0) val *= -1;
+        return val < 0.5;
+    }
+
     @Override
     public boolean onSupportNavigateUp() {
         onBackPressed();
@@ -299,11 +366,11 @@ public class SongActivity extends AppCompatActivity {
                 if (playlist.has(model.uri)) {
                     JSONObject song = (JSONObject) playlist.get(model.uri);
                     slices.clear();
-                    for(int i = 0; i < song.names().length(); i += 2){
+                    for (int i = 0; i < song.names().length(); i += 2) {
                         String name = song.names().getString(i);
                         String name2 = song.names().getString(i + 1);
-                        this.slices.add(new Slice(new int[]{song.getInt(name), song.getInt(name2)}, i/2, model.uri));
-                        System.out.println(Arrays.toString(slices.get(i/2).times));
+                        this.slices.add(new Slice(new int[]{song.getInt(name), song.getInt(name2)}, i / 2, model.uri));
+                        System.out.println(Arrays.toString(slices.get(i / 2).times));
                     }
                     printSlice();
                     sliceRecycler.post(new Runnable() {
@@ -312,6 +379,7 @@ public class SongActivity extends AppCompatActivity {
                             sliceAdapter.notifyDataSetChanged();
                         }
                     });
+
                 }
             }
 
@@ -398,7 +466,7 @@ public class SongActivity extends AppCompatActivity {
     }
 
     // Save the arraylist Slices into the JSON file
-    public void save() throws JSONException {
+    public void save(boolean isEditText) throws JSONException {
         String json = getSlices();
         JSONObject jsonObject = (json.equals("")) ? new JSONObject() : new JSONObject(json);
         JSONObject playlist = (JSONObject) ((jsonObject.has(playlistUri)) ? jsonObject.get(playlistUri) : new JSONObject());
@@ -412,9 +480,13 @@ public class SongActivity extends AppCompatActivity {
             Slice s = slices.get(j);
             int first = s.times[0];
             int second = s.times[1];
-            newSong.put("slice_" + s.number + "_start", first);
-            newSong.put("slice_" + s.number + "_end", second);
+            slices.get(j).number = j;
+            newSong.put("slice_" + j + "_start", first);
+            newSong.put("slice_" + j + "_end", second);
         }
+
+        printSlice();
+        System.out.println(newSong);
 
         if (playlist.has(model.uri)) playlist.remove(model.uri);
         if (slices.size() != 0) playlist.put(model.uri, newSong);
@@ -422,7 +494,7 @@ public class SongActivity extends AppCompatActivity {
         if (!jsonObject.has(playlistUri)) jsonObject.put(playlistUri, playlist);
         System.out.println(jsonObject.toString());
         Toast.makeText(getApplicationContext(), (write(jsonObject.toString())) ? "success" : "failure", Toast.LENGTH_SHORT).show();
-        load();
+        if (!isEditText) load();
     }
 
     // Write the given JSON String into the JSON file
@@ -444,22 +516,33 @@ public class SongActivity extends AppCompatActivity {
     // Add a slice to the ArrayList and Adapter
     public void addSlice(View v){
         try {
-            save();
+            if (slices.size() > 20){
+                Snackbar.make(v, "Slice can only handle 20 slices at the moment", Snackbar.LENGTH_SHORT).show();
+                return;
+            }
+            System.out.println("Adding a slice");
+            save(false);
             Slice brand_new = new Slice();
+            brand_new.songUri = model.uri;
             brand_new.times = new int[]{0, model.duration_ms};
+            brand_new.number = slices.size();
             slices.add(brand_new);
+            printSlice();
             sliceAdapter.notifyDataSetChanged();
         }
         catch (JSONException e) {
             e.printStackTrace();
         }
+
+        System.out.println("Done addding a slice");
+        return;
     }
 
     // Play the Current song by making a new thread
     public void playSong(View v){
         // Check if any other threads are playing something
         try {
-            save();
+            save(false);
             for (Thread t : Thread.getAllStackTraces().keySet()) {
                 System.out.println(t.getName());
                 if (t.getName().equals("PlaySongThread")) {
@@ -483,7 +566,7 @@ public class SongActivity extends AppCompatActivity {
 
     public void saveData(View v) {
         try {
-            save();
+            save(false);
         }
         catch(JSONException e){
             e.printStackTrace();
@@ -520,6 +603,18 @@ public class SongActivity extends AppCompatActivity {
             // Todo: Make sure the pauses are correct
             // Todo: Learn how to Interrupt the thread correctly
             String st;
+
+            CallResult <Empty> cr = mSpotifyAppRemote.getPlayerApi().seekTo(0);
+            Result<Empty> r = cr.await(1, TimeUnit.SECONDS);
+            if (r.isSuccessful()){
+                System.out.println("Went to 0 seconds correctly");
+            }
+            else{
+                r.getError().printStackTrace();
+                System.out.println("Was not able to go to 0");
+            }
+
+
 //            try {
 //                Thread.sleep(800);
 //            } catch (InterruptedException e) {
@@ -549,18 +644,22 @@ public class SongActivity extends AppCompatActivity {
                             System.out.println("Jumped to next slice");
                         }
                         else{
+                            result.getError().printStackTrace();
                             System.out.println("Did not jump to next slice");
                         }
                         try {
                             Thread.sleep(500);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
+                            return;
                         }
                         break;
                     }
                 }
 
                 // Skipping the song
+                System.out.println("Remaining is " + remaining);
+
                 if (!remaining){
                     System.out.println("Skipping");
                     mSpotifyAppRemote.getPlayerApi().skipNext();
@@ -568,15 +667,18 @@ public class SongActivity extends AppCompatActivity {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
+                        return;
                     }
                 }
                 try {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    return;
                 }
+                System.out.println("Listening to " + st);
             }
-            while(isPlaying() && !st.equals("") && st.equals(model.uri));
+            while(isPlaying() && st.equals(model.uri));
             System.out.println("Loop over");
         }
 
@@ -610,6 +712,7 @@ public class SongActivity extends AppCompatActivity {
             } else {
                 Throwable error = playerStateResult.getError();
                 error.printStackTrace();
+
                 // try to have some fun with the error
             }
             return "";

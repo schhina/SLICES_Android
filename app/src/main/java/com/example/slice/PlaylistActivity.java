@@ -26,6 +26,8 @@ import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
+import com.spotify.android.appremote.api.error.SpotifyConnectionTerminatedException;
+import com.spotify.android.appremote.api.error.SpotifyDisconnectedException;
 import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Result;
 import com.spotify.protocol.types.Empty;
@@ -174,11 +176,7 @@ public class PlaylistActivity extends AppCompatActivity {
         }
     }
 
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-
+    public void connect(){
         // TODO: Check if i can just pass the spotifyappremote object from the main activity
         // Spotify connection
         ConnectionParams connectionParams =
@@ -205,6 +203,14 @@ public class PlaylistActivity extends AppCompatActivity {
                         // Something went wrong when attempting to connect! Handle errors here
                     }
                 });
+    }
+
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        connect();
 
         // Adapter
         songAdapter = new RecyclerView.Adapter<FindSong>() {
@@ -303,6 +309,12 @@ public class PlaylistActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onStop() {
+        super.onStop();
+        // SpotifyAppRemote.disconnect(mSpotifyAppRemote);
+    }
+
+    @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.menu_playlist_activity, menu);
@@ -364,6 +376,9 @@ public class PlaylistActivity extends AppCompatActivity {
             }
         }
         // Play selected playlist and start new thread to slice songs
+        if (!mSpotifyAppRemote.isConnected()){
+            connect();
+        }
         mSpotifyAppRemote.getPlayerApi().play(model.uri);
         RunPlaylistThread thread = new RunPlaylistThread(model.uri, mSpotifyAppRemote);
         thread.setName("Playlist Runner");
@@ -545,12 +560,17 @@ public class PlaylistActivity extends AppCompatActivity {
             System.out.println("Printing the slices");
 
             // TODO:: Make sure all the timing is right for pauses
+            // TODO:: If start and end time for slice are the same, skip it
 
-            // Needed pause to make sure we recognize spotify is playing
-            try {
-                Thread.sleep(800);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            check();
+            CallResult <Empty> cr = mSpotifyAppRemote.getPlayerApi().seekTo(0);
+            Result<Empty> r = cr.await(1, TimeUnit.SECONDS);
+            if (r.isSuccessful()){
+                System.out.println("Went to 0 seconds correctly");
+            }
+            else{
+                r.getError().printStackTrace();
+                System.out.println("Was not able to go to 0");
             }
 
             System.out.println(isPlaying());
@@ -579,6 +599,7 @@ public class PlaylistActivity extends AppCompatActivity {
                         // Not in a slice, so jumping to the next one
                         else if (seconds < first){
                             remaining = true;
+                            check();
                             CallResult <Empty> callResult = mSpotifyAppRemote.getPlayerApi().seekTo(first);
                             Result<Empty> result = callResult.await(1, TimeUnit.SECONDS);
                             if (result.isSuccessful()){
@@ -588,9 +609,10 @@ public class PlaylistActivity extends AppCompatActivity {
                                 System.out.println("Did not jump to next slice");
                             }
                             try {
-                                Thread.sleep(100);
+                                Thread.sleep(500);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
+                                return;
                             }
                             break;
                         }
@@ -600,11 +622,13 @@ public class PlaylistActivity extends AppCompatActivity {
                     // No slices left so skipping  current song
                     if (!remaining){
                         System.out.println("Skipping");
+                        check();
                         mSpotifyAppRemote.getPlayerApi().skipNext();
                         try {
                             Thread.sleep(500);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
+                            return;
                         }
                     }
                 }
@@ -613,11 +637,13 @@ public class PlaylistActivity extends AppCompatActivity {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    return;
                 }
                 // System.out.println("New iteration");
             }
             while (isPlaying() && !curr.equals(""));
-
+            System.out.println("is playing is " + isPlaying());
+            System.out.println("curr is " + curr);
             System.out.println("Loop over");
 
         }
@@ -662,9 +688,22 @@ public class PlaylistActivity extends AppCompatActivity {
             return slices;
         }
 
+        private void check(){
+            if (!mSpotifyAppRemote.isConnected()) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("Spotify disconnected");
+                        connect();
+                    }
+                });
+            }
+        }
+
 
 
         private boolean isPlaying(){
+            check();
             CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
             if (playerStateResult.isSuccessful()) {
@@ -681,6 +720,7 @@ public class PlaylistActivity extends AppCompatActivity {
         }
 
         private String getCurrent(){
+            check();
             CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
             if (playerStateResult.isSuccessful()) {

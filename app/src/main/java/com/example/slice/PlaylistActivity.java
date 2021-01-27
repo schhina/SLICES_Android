@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
@@ -337,6 +338,29 @@ public class PlaylistActivity extends AppCompatActivity {
 
                 return true;
 
+            case R.id.action_open_spotify_playlist:
+                if (SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())){
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse(model.uri));
+                    intent.putExtra(Intent.EXTRA_REFERRER,
+                            Uri.parse("android-app://" + getApplicationContext().getPackageName()));
+                    startActivity(intent);
+                }
+                else{
+                    String cleaned;
+                    if (model.uri.length() > 18) cleaned = model.uri.substring(17);
+                    else cleaned = "";
+                    System.out.println(cleaned);
+                    if (cleaned.equals("")) Snackbar.make(songRecycler, "Sorry, couldn't find that playlist", Snackbar.LENGTH_SHORT).show();
+                    else{
+                        Uri uriUrl = Uri.parse("https://open.spotify.com/playlist/" + cleaned);
+                        Intent launchBrowser = new Intent(Intent.ACTION_VIEW, uriUrl);
+                        startActivity(launchBrowser);
+                    }
+
+                }
+
+                return true;
             default:
                 // If we got here, the user's action was not recognized.
                 // Invoke the superclass to handle it.

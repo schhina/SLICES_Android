@@ -15,9 +15,9 @@
         android:icon="@drawable/ic_baseline_add_24"
         app:showAsAction="always" />
     <item
-        android:id="@+id/action_temp_song_settings"
+        android:id="@+id/action_open_spotify_song"
         android:orderInCategory="150"
-        android:title="Temporary setting"
+        android:title="View Song on Spotify"
         app:showAsAction="never"
         />
 </menu>

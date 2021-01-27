@@ -7,7 +7,9 @@ import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.content.Intent;
 import android.graphics.Typeface;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
@@ -272,6 +274,14 @@ public class SongActivity extends AppCompatActivity {
 
             case R.id.action_add_slice:
                 addSlice(item.getActionView());
+                return true;
+
+            case R.id.action_open_spotify_song:
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse(model.uri));
+                intent.putExtra(Intent.EXTRA_REFERRER,
+                        Uri.parse("android-app://" + getApplicationContext().getPackageName()));
+                startActivity(intent);
                 return true;
 
             default:

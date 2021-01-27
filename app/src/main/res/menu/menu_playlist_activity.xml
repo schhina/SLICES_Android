@@ -7,4 +7,10 @@
         android:orderInCategory="100"
         android:title="Clear Playlist Slices"
         app:showAsAction="never" />
+
+    <item
+        android:id="@+id/action_open_spotify_playlist"
+        android:orderInCategory="150"
+        android:title="Open Playlist in Spotify"
+        app:showAsAction="never"/>
 </menu>

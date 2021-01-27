@@ -20,49 +20,48 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content">
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
+<!--        <LinearLayout-->
+<!--            android:layout_width="match_parent"-->
+<!--            android:layout_height="wrap_content"-->
+<!--            android:orientation="horizontal">-->
 
-            <Button
-                android:background="@drawable/button_background"
-                android:id="@+id/song_save_button"
-                android:onClick="saveData"
-                android:text="Save"
-                android:layout_marginRight="20dp"
-                android:layout_width="wrap_content"
-                android:layout_weight="10"
-                android:fontFamily="monospace"
-                android:layout_height="wrap_content" />
+<!--            <Button-->
+<!--                android:background="@drawable/button_background"-->
+<!--                android:id="@+id/song_save_button"-->
+<!--                android:text="Save"-->
+<!--                android:layout_marginRight="20dp"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_weight="10"-->
+<!--                android:fontFamily="monospace"-->
+<!--                android:layout_height="wrap_content" />-->
 
-            <Button
-                android:id="@+id/song_play_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="center"
-                android:layout_marginRight="20dp"
-                android:layout_weight="10"
-                android:background="@drawable/button_background"
-                android:fontFamily="monospace"
-                android:gravity="center"
-                android:onClick="playSong"
-                android:text="Play"
-                android:textColor="#000000" />
+<!--            <Button-->
+<!--                android:id="@+id/song_play_button"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="center"-->
+<!--                android:layout_marginRight="20dp"-->
+<!--                android:layout_weight="10"-->
+<!--                android:background="@drawable/button_background"-->
+<!--                android:fontFamily="monospace"-->
+<!--                android:gravity="center"-->
+<!--                android:onClick="playSong"-->
+<!--                android:text="Play"-->
+<!--                android:textColor="#000000" />-->
 
-            <Button
-                android:id="@+id/song_add_button"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_gravity="end"
-                android:layout_weight="10"
-                android:background="@drawable/button_background"
-                android:fontFamily="monospace"
-                android:onClick="addSlice"
-                android:text="Add Slice"
-                android:textColor="#000000" />
+<!--            <Button-->
+<!--                android:id="@+id/song_add_button"-->
+<!--                android:layout_width="wrap_content"-->
+<!--                android:layout_height="wrap_content"-->
+<!--                android:layout_gravity="end"-->
+<!--                android:layout_weight="10"-->
+<!--                android:background="@drawable/button_background"-->
+<!--                android:fontFamily="monospace"-->
+<!--                android:onClick="addSlice"-->
+<!--                android:text="Add Slice"-->
+<!--                android:textColor="#000000" />-->
 
-        </LinearLayout>
+<!--        </LinearLayout>-->
 
         <edmt.dev.advancednestedscrollview.MaxHeightRecyclerView
             android:layout_width="match_parent"

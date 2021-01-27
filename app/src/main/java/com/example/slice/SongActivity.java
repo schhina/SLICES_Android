@@ -1,6 +1,7 @@
 package com.example.slice;
 
 import androidx.annotation.NonNull;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.recyclerview.widget.LinearLayoutManager;
@@ -11,8 +12,11 @@ import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.Log;
+import android.view.ContextThemeWrapper;
 import android.view.KeyEvent;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
@@ -253,6 +257,32 @@ public class SongActivity extends AppCompatActivity {
     }
 
     @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.song_menu, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case R.id.action_play_song:
+                playSong(item.getActionView());
+                return true;
+
+            case R.id.action_add_slice:
+                addSlice(item.getActionView());
+                return true;
+
+            default:
+                // If we got here, the user's action was not recognized.
+                // Invoke the superclass to handle it.
+                return super.onOptionsItemSelected(item);
+
+        }
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
 
@@ -365,6 +395,7 @@ public class SongActivity extends AppCompatActivity {
         }
         catch(FileNotFoundException notFound){
             System.out.println("File not found");
+            notFound.printStackTrace();
             return "";
         }
         catch(IOException except){
@@ -450,7 +481,7 @@ public class SongActivity extends AppCompatActivity {
 
         if (!jsonObject.has(playlistUri)) jsonObject.put(playlistUri, playlist);
         System.out.println(jsonObject.toString());
-        Toast.makeText(getApplicationContext(), (write(jsonObject.toString())) ? "success" : "failure", Toast.LENGTH_SHORT).show();
+        write(jsonObject.toString());
         if (!isEditText) load();
     }
 
@@ -523,14 +554,14 @@ public class SongActivity extends AppCompatActivity {
 
     }
 
-    public void saveData(View v) {
-        try {
-            save(false);
-        }
-        catch(JSONException e){
-            e.printStackTrace();
-        }
-    }
+//    public void saveData(View v) {
+//        try {
+//            save(false);
+//        }
+//        catch(JSONException e){
+//            e.printStackTrace();
+//        }
+//    }
 
 
 

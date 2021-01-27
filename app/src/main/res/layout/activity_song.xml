@@ -34,11 +34,9 @@
                 android:background="#242424"
                 app:popupTheme="@style/AppTheme.PopupOverlay" >
 
-                <TextView
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"/>
-
             </androidx.appcompat.widget.Toolbar>
+
+
 
 
 <!--            <androidx.constraintlayout.widget.ConstraintLayout-->
@@ -92,7 +90,7 @@
 <!--        android:layout_margin="@dimen/fab_margin"-->
 <!--        android:onClick="addSlice"-->
 <!--        app:layout_anchor="@id/song_app_bar"-->
-<!--        app:layout_anchorGravity="bottom|end"-->
+<!--        app:layout_anchorGravity="bottom|start"-->
 <!--        app:srcCompat="@android:drawable/ic_menu_add" />-->
 
 <!--    <com.google.android.material.floatingactionbutton.FloatingActionButton-->
@@ -102,7 +100,7 @@
 <!--        android:layout_margin="@dimen/fab_margin"-->
 <!--        android:onClick="addSlice"-->
 <!--        app:layout_anchor="@id/song_app_bar"-->
-<!--        app:layout_anchorGravity="bottom|center"-->
+<!--        app:layout_anchorGravity="bottom|end"-->
 <!--        app:srcCompat="@android:drawable/ic_media_play" />-->
 
 

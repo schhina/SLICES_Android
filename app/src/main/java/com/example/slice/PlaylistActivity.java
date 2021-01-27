@@ -421,6 +421,7 @@ public class PlaylistActivity extends AppCompatActivity {
         }
         catch(FileNotFoundException notFound){
             System.out.println("File not found");
+            notFound.printStackTrace();
             return "";
         }
         catch(IOException except){
@@ -556,10 +557,7 @@ public class PlaylistActivity extends AppCompatActivity {
 
             String curr;
             int iter = 0;
-            HashMap<String, ArrayList<int[]>> slices = load();
-
-            System.out.println(slices.toString());
-            System.out.println("Printing the slices");
+            HashMap<String, ArrayList<int[]>> slices;
 
             // TODO:: Make sure all the timing is right for pauses
             // TODO:: If start and end time for slice are the same, skip it
@@ -594,12 +592,14 @@ public class PlaylistActivity extends AppCompatActivity {
                         // Song is currently in a slice so all good
                         // Same issue with the last condition as in the songActivity one
                         if (seconds >= first && (seconds <= second || second == -1 || second == duration)){
+                            System.out.println("Currently in a slice");
                             remaining = true;
                             break;
                         }
 
                         // Not in a slice, so jumping to the next one
                         else if (seconds < first){
+                            System.out.println("Found a slice to jump to");
                             remaining = true;
                             check();
                             CallResult <Empty> callResult = mSpotifyAppRemote.getPlayerApi().seekTo(first);
@@ -711,14 +711,11 @@ public class PlaylistActivity extends AppCompatActivity {
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
             if (playerStateResult.isSuccessful()) {
                 PlayerState playerState = playerStateResult.getData();
-                // have some fun with playerState
-                // System.out.println("Isplaying is goiing well");
                 return !playerState.isPaused;
             } else {
                 Throwable error = playerStateResult.getError();
-                // System.out.println("error')");
+                error.printStackTrace();
                 return false;
-                // try to have some fun with the error
             }
         }
 
@@ -728,21 +725,17 @@ public class PlaylistActivity extends AppCompatActivity {
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
             if (playerStateResult.isSuccessful()) {
                 PlayerState playerState = playerStateResult.getData();
-                // have some fun with playerState
-                // System.out.println("Get current is going well");
-                // System.out.println(playerState.track.uri);
                 seconds = (int) playerState.playbackPosition;
                 if (playerState.track != null){
                     duration = (int) playerState.track.duration;
                     return playerState.track.uri;
                 }
-                return "";
             } else {
                 Throwable error = playerStateResult.getError();
+                error.printStackTrace();
                 // System.out.println("error') in the get current");
-                return "";
-                // try to have some fun with the error
             }
+            return "";
         }
 
 

@@ -181,7 +181,6 @@ public class PlaylistActivity extends AppCompatActivity {
     }
 
     public void connect(){
-        // TODO: Check if i can just pass the spotifyappremote object from the main activity
         // Spotify connection
         ConnectionParams connectionParams =
                 new ConnectionParams.Builder(CLIENT_ID)
@@ -358,18 +357,23 @@ public class PlaylistActivity extends AppCompatActivity {
             }
         }
         // Play selected playlist and start new thread to slice songs
-        if (!mSpotifyAppRemote.isConnected()){
-            connect();
-        }
-        if (SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) {
-            mSpotifyAppRemote.getPlayerApi().play(model.uri);
-            RunPlaylistThread thread = new RunPlaylistThread(model.uri, mSpotifyAppRemote);
-            thread.setName("Playlist Runner");
-            thread.start();
+        if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())){
+            Snackbar.make(v, "Spotify must be installed to use this feature", Snackbar.LENGTH_SHORT).show();
         }
         else{
-            Snackbar.make(v, "Spotify must be installed on your phone to use this app", Snackbar.LENGTH_SHORT).show();
+            if (!mSpotifyAppRemote.isConnected()) connect();
+            try{
+                mSpotifyAppRemote.getPlayerApi().play(model.uri);
+                RunPlaylistThread thread = new RunPlaylistThread(model.uri, mSpotifyAppRemote);
+                thread.setName("Playlist Runner");
+                thread.start();
+            }
+            catch(Exception e){
+                e.printStackTrace();
+            }
+
         }
+
 
     }
 

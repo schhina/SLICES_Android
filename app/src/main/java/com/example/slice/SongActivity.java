@@ -543,11 +543,14 @@ public class SongActivity extends AppCompatActivity {
             }
 
             // Play the song and start the thread for slices
-            if (!mSpotifyAppRemote.isConnected()) connect();
-            mSpotifyAppRemote.getPlayerApi().play(model.uri);
-            PlaySongThread thread = new PlaySongThread();
-            thread.setName("PlaySongThread");
-            thread.start();
+            if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) Snackbar.make(sliceRecycler, "Spotify must be installed to use this feature", Snackbar.LENGTH_SHORT).show();
+            else{
+                if (!mSpotifyAppRemote.isConnected()) connect();
+                mSpotifyAppRemote.getPlayerApi().play(model.uri);
+                PlaySongThread thread = new PlaySongThread();
+                thread.setName("PlaySongThread");
+                thread.start();
+            }
         } catch (JSONException e) {
             e.printStackTrace();
         }

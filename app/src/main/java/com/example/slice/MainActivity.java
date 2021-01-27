@@ -226,6 +226,8 @@ public class MainActivity extends AppCompatActivity {
         super.onStart();
 
         // Connect to spotify acocunt
+        if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) Snackbar.make(playlistRecycler, "Download Spotify to fully use Slice!", Snackbar.LENGTH_SHORT).show();
+
         ConnectionParams connectionParams =
                 new ConnectionParams.Builder(CLIENT_ID)
                         .setRedirectUri(REDIRECT_URI)
@@ -379,9 +381,17 @@ public class MainActivity extends AppCompatActivity {
                     total_playlists = playlistSimplePager.total;
                     playlistAdapter.notifyDataSetChanged();
                     offset = playlist_list.size();
+
+                    if (total_playlists == 0) Snackbar.make(playlistRecycler, "Make some playlists to use Slice!", Snackbar.LENGTH_SHORT).show();
                 }
             });
         }
+    }
+
+    // Todo: Create a logout system.
+    private boolean logout(){
+        // AuthenticationClient#clearCookies();
+        return true;
     }
 
 

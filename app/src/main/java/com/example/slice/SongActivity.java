@@ -160,28 +160,6 @@ public class SongActivity extends AppCompatActivity {
 
                 });
 
-                // Save button
-//                holder.save.setOnClickListener(new View.OnClickListener() {
-//                    @Override
-//                    public void onClick(View v) {
-//                        int left = (int) (holder.seekbar.getSelectedMinValue().doubleValue()*1000);
-//                        int right = (int) (holder.seekbar.getSelectedMaxValue().doubleValue()*1000);
-//                        System.out.println("left is " + left);
-//                        slices.get(position).times[0] = left;
-//                        slices.get(position).times[1] = right;
-//                        try {
-////                            if (!slice.isSaved()) {
-////                                save(left, right);
-////                                slices.get(position).saved = true;
-////                            }
-////                            else save();
-//                            save();
-//                        } catch (JSONException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                });
-
                 // Do this when the seekbar changes
                 holder.seekbar.setOnRangeSeekbarChangeListener(new OnRangeSeekbarChangeListener() {
                     @Override
@@ -195,59 +173,19 @@ public class SongActivity extends AppCompatActivity {
                         }
                         int left = (int) (holder.seekbar.getSelectedMinValue().doubleValue()*1000);
                         int right = (int) (holder.seekbar.getSelectedMaxValue().doubleValue()*1000);
-                        // System.out.println("left is " + left);
                         update(position, left, right);
-//                        slices.get(position).times[0] = left;
-//                        slices.get(position).times[1] = right;
-//                            try {
-////                            if (!slice.isSaved()) {
-////                                save(left, right);
-////                                slices.get(position).saved = true;
-////                            }
-////                            else save();
-//                                save();
-//                            } catch (JSONException e) {
-//                                e.printStackTrace();
-//                            }
+                        try{
+                            save(true);
                         }
+                        catch(JSONException e){
+                            e.printStackTrace();
+                        }
+                    }
 
 
                 });
 
                 // When the left edittext is updated;
-//                holder.left.addTextChangedListener(new TextWatcher() {
-//                    @Override
-//                    public void beforeTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//
-//                    }
-//
-//                    @Override
-//                    public void onTextChanged(CharSequence charSequence, int i, int i1, int i2) {
-//                        System.out.println("Left is being changed atm");
-//
-//                    }
-//
-//                    @Override
-//                    public void afterTextChanged(Editable editable) {
-//                        System.out.println("Left was changed");
-//                        System.out.println("Left got updated to " + holder.left.getText().toString());
-//                        int left = (int) (parseDouble(holder.left.getText().toString())*1000);
-//                        System.out.println("left is " + left);
-//                        slices.get(position).times[0] = left;
-//                        // holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
-//                        if (!closeEnough(holder.seekbar.getSelectedMinValue().intValue(), left)){
-//                            System.out.println("also not close enough");
-//                            holder.seekbar.setMinStartValue((float) (left/1000.0));
-//                            holder.seekbar.setMaxStartValue((float) (slices.get(position).times[1]/1000.0));
-//                            holder.seekbar.apply();
-//                        }
-//                        try {
-//                            save();
-//                        } catch (JSONException e) {
-//                            e.printStackTrace();
-//                        }
-//                    }
-//                });
                 holder.left.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                     @Override
                     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -304,12 +242,31 @@ public class SongActivity extends AppCompatActivity {
         sliceRecycler.setAdapter(sliceAdapter);
         System.out.println(sliceAdapter.getItemCount());
 
-        // TODO: Find a stable way to not make slice lists over 5 break the seekbars
+        // TODO: Find a stable way to not make slice lists over 5(original default value) break the seekbars
         sliceRecycler.getRecycledViewPool().setMaxRecycledViews(0,50);
 
 
 
         // Spotify stuff
+        connect();
+
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+
+        try{
+            save(false);
+        }
+        catch(JSONException e){
+            e.printStackTrace();
+        }
+    }
+
+    public void connect(){
+        // TODO: Check if i can just pass the spotifyappremote object from the main activity
+        // Spotify connection
         ConnectionParams connectionParams =
                 new ConnectionParams.Builder(CLIENT_ID)
                         .setRedirectUri(REDIRECT_URI)
@@ -334,7 +291,6 @@ public class SongActivity extends AppCompatActivity {
                         // Something went wrong when attempting to connect! Handle errors here
                     }
                 });
-
     }
 
     public void update(int p, int l, int r){
@@ -474,7 +430,7 @@ public class SongActivity extends AppCompatActivity {
         JSONObject newSong = new JSONObject();
 
         // S0rt and clean the Slice ArrayList
-        if (clean()) Toast.makeText(getApplicationContext(), "The problem with the slices has been removed", Toast.LENGTH_SHORT).show();
+        if (!isEditText) if (clean()) Snackbar.make(sliceRecycler, "The problem with the slices has been removed", Snackbar.LENGTH_SHORT).show();
 
         // Add the slices into the json file
         for(int j = 0; j < slices.size(); j++){
@@ -529,6 +485,7 @@ public class SongActivity extends AppCompatActivity {
             brand_new.number = slices.size();
             slices.add(brand_new);
             printSlice();
+            sliceRecycler.getRecycledViewPool().clear();
             sliceAdapter.notifyDataSetChanged();
         }
         catch (JSONException e) {
@@ -555,6 +512,7 @@ public class SongActivity extends AppCompatActivity {
             }
 
             // Play the song and start the thread for slices
+            if (!mSpotifyAppRemote.isConnected()) connect();
             mSpotifyAppRemote.getPlayerApi().play(model.uri);
             PlaySongThread thread = new PlaySongThread();
             thread.setName("PlaySongThread");
@@ -604,7 +562,9 @@ public class SongActivity extends AppCompatActivity {
             // Todo: Make sure the pauses are correct
             // Todo: Learn how to Interrupt the thread correctly
             String st;
+            int iter = 0;
 
+            check();
             CallResult <Empty> cr = mSpotifyAppRemote.getPlayerApi().seekTo(0);
             Result<Empty> r = cr.await(1, TimeUnit.SECONDS);
             if (r.isSuccessful()){
@@ -625,6 +585,7 @@ public class SongActivity extends AppCompatActivity {
             do{
                 st = getCurrent();
                 boolean remaining = false;
+                if (slices.size() == 0) remaining = true;
                 for(Slice s : slices){
                     int first = s.times[0];
                     int second = s.times[1];
@@ -639,6 +600,7 @@ public class SongActivity extends AppCompatActivity {
                     // Not currently in a slice and there is one in the future
                     else if (seconds < first){
                         remaining = true;
+                        check();
                         CallResult <Empty> callResult = mSpotifyAppRemote.getPlayerApi().seekTo(first);
                         Result<Empty> result = callResult.await(1, TimeUnit.SECONDS);
                         if (result.isSuccessful()){
@@ -663,6 +625,7 @@ public class SongActivity extends AppCompatActivity {
 
                 if (!remaining){
                     System.out.println("Skipping");
+                    check();
                     mSpotifyAppRemote.getPlayerApi().skipNext();
                     try {
                         Thread.sleep(500);
@@ -678,13 +641,27 @@ public class SongActivity extends AppCompatActivity {
                     return;
                 }
                 System.out.println("Listening to " + st);
+                iter++;
             }
-            while(isPlaying() && st.equals(model.uri));
+            while((isPlaying() && st.equals(model.uri)) || iter < 10);
             System.out.println("Loop over");
+        }
+
+        private void check(){
+            if (!mSpotifyAppRemote.isConnected()) {
+                runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        System.out.println("Spotify disconnected");
+                        connect();
+                    }
+                });
+            }
         }
 
         // Checks if anything is playing in spotify
         private boolean isPlaying(){
+            check();
             CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
             if (playerStateResult.isSuccessful()) {
@@ -701,6 +678,7 @@ public class SongActivity extends AppCompatActivity {
 
         // Returns the current song uri and updates the seconds global variable
         private String getCurrent(){
+            check();
             CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
             if (playerStateResult.isSuccessful()) {

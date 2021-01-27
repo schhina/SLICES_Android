@@ -102,8 +102,7 @@ public class PlaylistActivity extends AppCompatActivity {
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
 
-        // Test for git
-        System.out.println("this is to test git");
+        connect();
 
         // Views and Intent
         String playlistUri = (String) getIntent().getExtras().get("playlistUri");
@@ -362,10 +361,16 @@ public class PlaylistActivity extends AppCompatActivity {
         if (!mSpotifyAppRemote.isConnected()){
             connect();
         }
-        mSpotifyAppRemote.getPlayerApi().play(model.uri);
-        RunPlaylistThread thread = new RunPlaylistThread(model.uri, mSpotifyAppRemote);
-        thread.setName("Playlist Runner");
-        thread.start();
+        if (SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) {
+            mSpotifyAppRemote.getPlayerApi().play(model.uri);
+            RunPlaylistThread thread = new RunPlaylistThread(model.uri, mSpotifyAppRemote);
+            thread.setName("Playlist Runner");
+            thread.start();
+        }
+        else{
+            Snackbar.make(v, "Spotify must be installed on your phone to use this app", Snackbar.LENGTH_SHORT).show();
+        }
+
     }
 
     public void clear(){
@@ -550,6 +555,7 @@ public class PlaylistActivity extends AppCompatActivity {
         public void run(){
 
             String curr;
+            int iter = 0;
             HashMap<String, ArrayList<int[]>> slices = load();
 
             System.out.println(slices.toString());
@@ -636,8 +642,9 @@ public class PlaylistActivity extends AppCompatActivity {
                     return;
                 }
                 // System.out.println("New iteration");
+                iter ++;
             }
-            while (isPlaying() && !curr.equals(""));
+            while ((isPlaying() && !curr.equals("")) || iter < 10);
             System.out.println("is playing is " + isPlaying());
             System.out.println("curr is " + curr);
             System.out.println("Loop over");

@@ -622,6 +622,7 @@ public class SongActivity extends AppCompatActivity {
     public class PlaySongThread extends Thread{
         int seconds = 0;
         int duration = model.duration_ms;
+        boolean shown = false;
 
         // Check the current song for slices
         @Override
@@ -639,7 +640,10 @@ public class SongActivity extends AppCompatActivity {
             }
             else{
                 System.out.println(r.getErrorMessage());
-                if (r.getErrorMessage() == "Result was not delivered on time") Snackbar.make(sliceRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                if (r.getErrorMessage() == "Result was not delivered on time" && !shown) {
+                    Snackbar.make(sliceRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                    shown = true;
+                }
                 r.getError().printStackTrace();
                 System.out.println("Was not able to go to 0");
             }
@@ -735,7 +739,10 @@ public class SongActivity extends AppCompatActivity {
                 Throwable error = playerStateResult.getError();
                 error.printStackTrace();
                 System.out.println(error.getMessage());
-                if (error.getMessage() == "Result was not delivered on time") Snackbar.make(sliceRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                if (error.getMessage() == "Result was not delivered on time" && !shown) {
+                    Snackbar.make(sliceRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                    shown = true;
+                }
                 return false;
             }
         }
@@ -755,7 +762,10 @@ public class SongActivity extends AppCompatActivity {
                 Throwable error = playerStateResult.getError();
                 error.printStackTrace();
                 System.out.println(error.getMessage());
-                if (error.getMessage() == "Result was not delivered on time") Snackbar.make(sliceRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                if (error.getMessage() == "Result was not delivered on time" && !shown) {
+                    Snackbar.make(sliceRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                    shown = true;
+                }
 
             }
             return "";

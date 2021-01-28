@@ -23,15 +23,12 @@ import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.snackbar.Snackbar;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
-import com.spotify.android.appremote.api.error.SpotifyConnectionTerminatedException;
-import com.spotify.android.appremote.api.error.SpotifyDisconnectedException;
 import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Result;
 import com.spotify.protocol.types.Empty;
@@ -96,7 +93,7 @@ public class PlaylistActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_playlist_test);
+        setContentView(R.layout.activity_playlist);
 
         // Toolbar stuff
         Toolbar toolbar = findViewById(R.id.toolbar_playlist);;

@@ -5,10 +5,10 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     app:layout_behavior="@string/appbar_scrolling_view_behavior"
-    tools:context=".PlaylistTestActivity"
+    tools:context=".PlaylistActivity"
     android:background="#242424"
     android:id="@+id/playlist_scroll"
-    tools:showIn="@layout/activity_playlist_test">
+    tools:showIn="@layout/activity_playlist">
 
 <!--    <TextView-->
 <!--        android:layout_width="wrap_content"-->

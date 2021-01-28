@@ -60,9 +60,6 @@ import static java.lang.Integer.parseInt;
 
 public class SongActivity extends AppCompatActivity {
 
-    // Views
-    private TextView name;
-
     // Song and Playlist fields
     private Track model;
     private String playlistUri;
@@ -71,7 +68,6 @@ public class SongActivity extends AppCompatActivity {
     private RecyclerView sliceRecycler;
     private RecyclerView.Adapter <FindSlice> sliceAdapter;
     private ArrayList<Slice> slices = new ArrayList<>();
-    boolean first = true;
 
     // Spotify Stuff
     private SpotifyAppRemote mSpotifyAppRemote;
@@ -85,6 +81,8 @@ public class SongActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_song);
+
+        // Toolbar stuff
         Toolbar toolbar = findViewById(R.id.song_toolbar);;
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
@@ -102,25 +100,26 @@ public class SongActivity extends AppCompatActivity {
         model = new Track(songUri, SongID, playlistUri, songName, duration, imageUrl);
         model.artist = artist;
 
-        // Init Views
+        // Init Toolbar
         CollapsingToolbarLayout toolBarLayout = (CollapsingToolbarLayout) findViewById(R.id.song_collapsing_toolbar);
         toolBarLayout.setTitle(model.name + " - " + model.artist);
         toolBarLayout.setCollapsedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
         toolBarLayout.setExpandedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
 
-
-//        ImageView image = findViewById(R.id.song_image);
-//        Picasso.get().load(imageUrl).into(image);
-
         // Init recycler
         sliceRecycler = findViewById(R.id.song_activity_slice_recycler);
         sliceRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
+
+        // Init Slice list
         load();
     }
 
     @Override
     protected void onStart() {
         super.onStart();
+
+        // Spotify stuff
+        connect();
 
         // Init Adapter
         sliceAdapter = new RecyclerView.Adapter<FindSlice>() {
@@ -133,19 +132,19 @@ public class SongActivity extends AppCompatActivity {
 
             @Override
             public void onBindViewHolder(@NonNull FindSlice holder, int position) {
-                // Init Fields
 
+                // Init Fields
                 Slice slice = slices.get(position);
                 int left = slice.times[0];
                 int right = slice.times[1];
-                // System.out.println((slice.times[0]));
-                final boolean[] init = {true};
+
+                // Init Edit texts
                 holder.left.setText(left/1000.0 + "");
                 holder.right.setText(right/1000.0 + "");
-                // holder.number.setText("Slice #" + slice.number);
+
+                // Init seekbar
                 holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
                 holder.seekbar.setMaxValue((float) (model.duration_ms/1000.0));
-//                holder.seekbar.setMinValue(0);
                 holder.seekbar.setMinStartValue((float) (slices.get(position).times[0]/1000.0));
                 holder.seekbar.setMaxStartValue((float) (slices.get(position).times[1]/1000.0));
                 holder.seekbar.apply();
@@ -171,15 +170,19 @@ public class SongActivity extends AppCompatActivity {
                     @Override
                     public void valueChanged(Number minValue, Number maxValue) {
                         System.out.println(position + " got moved a bit");
+
+                        // This is to prevent infinite recursion from happening between this and the edit texts
                         if (!closeEnough(parseDouble(holder.left.getText().toString()), minValue.doubleValue()) ||
                         !closeEnough(parseDouble(holder.right.getText().toString()), maxValue.doubleValue())){
                             System.out.println("not close enought");
                             holder.left.setText(minValue + "");
                             holder.right.setText(maxValue + "");
                         }
+
                         int left = (int) (holder.seekbar.getSelectedMinValue().doubleValue()*1000);
                         int right = (int) (holder.seekbar.getSelectedMaxValue().doubleValue()*1000);
-                        update(position, left, right);
+                        slices.get(position).times[0] = left;
+                        slices.get(position).times[1] = right;
                         try{
                             save(true);
                         }
@@ -191,7 +194,7 @@ public class SongActivity extends AppCompatActivity {
 
                 });
 
-                // When the left edittext is updated;
+                // When the left EditText is updated;
                 holder.left.setOnEditorActionListener(new TextView.OnEditorActionListener() {
                     @Override
                     public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
@@ -199,7 +202,8 @@ public class SongActivity extends AppCompatActivity {
                         int left = (int) (parseDouble(holder.left.getText().toString())*1000);
                         System.out.println("left is " + left);
                         slices.get(position).times[0] = left;
-                        // holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
+
+                        // Prevents infinite Recursion from happening between the left edit text and seekbar
                         if (!closeEnough(holder.seekbar.getSelectedMinValue().intValue(), left)) {
                             holder.seekbar.setMinStartValue((float) (left / 1000.0));
                             holder.seekbar.setMaxStartValue((float) (slices.get(position).times[1] / 1000.0));
@@ -222,6 +226,8 @@ public class SongActivity extends AppCompatActivity {
                         System.out.println("Right got updtated to " + holder.right.getText().toString());
                         int right = (int) (parseDouble(holder.right.getText().toString())*1000);
                         slices.get(position).times[1] = right;
+
+                        // Prevents infinite recursion from the right edit text and the seekbar
                         if (!closeEnough(holder.seekbar.getSelectedMaxValue().intValue(), right)) {
                             holder.seekbar.setDataType(CrystalRangeSeekbar.DataType.FLOAT);
                             holder.seekbar.setMinStartValue((float) (slices.get(position).times[0] / 1000.0));
@@ -251,11 +257,6 @@ public class SongActivity extends AppCompatActivity {
         // TODO: Find a stable way to not make slice lists over 5(original default value) break the seekbars
         sliceRecycler.getRecycledViewPool().setMaxRecycledViews(0,50);
 
-
-
-        // Spotify stuff
-        connect();
-
     }
 
     @Override
@@ -268,20 +269,43 @@ public class SongActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            // Play the song button
             case R.id.action_play_song:
                 playSong(item.getActionView());
                 return true;
 
+            // Add a slice to the list and recycler view
             case R.id.action_add_slice:
                 addSlice(item.getActionView());
                 return true;
 
+            // Open song in spotify
             case R.id.action_open_spotify_song:
-                Intent intent = new Intent(Intent.ACTION_VIEW);
-                intent.setData(Uri.parse(model.uri));
-                intent.putExtra(Intent.EXTRA_REFERRER,
-                        Uri.parse("android-app://" + getApplicationContext().getPackageName()));
-                startActivity(intent);
+
+                // Check if spotify is installed
+                if (SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())){
+                    // Open song in spotif
+                    Intent intent = new Intent(Intent.ACTION_VIEW);
+                    intent.setData(Uri.parse(model.uri));
+                    intent.putExtra(Intent.EXTRA_REFERRER,
+                            Uri.parse("android-app://" + getApplicationContext().getPackageName()));
+                    startActivity(intent);
+                }
+                else {
+                    // Open song in web browser
+                    String cleaned;
+                    if (model.uri.length() > 15) cleaned = model.uri.substring(14);
+                    else cleaned = "";
+                    System.out.println(cleaned);
+                    if (cleaned.equals(""))
+                        Snackbar.make(sliceRecycler, "Sorry, couldn't find that song", Snackbar.LENGTH_SHORT).show();
+                    else {
+                        Uri uriUrl = Uri.parse("https://open.spotify.com/album/" + cleaned);
+                        Intent launchBrowser = new Intent(Intent.ACTION_VIEW, uriUrl);
+                        startActivity(launchBrowser);
+                    }
+                }
+
                 return true;
 
             default:
@@ -292,6 +316,7 @@ public class SongActivity extends AppCompatActivity {
         }
     }
 
+    // When you exit this page, save the slices
     @Override
     protected void onStop() {
         super.onStop();
@@ -305,7 +330,6 @@ public class SongActivity extends AppCompatActivity {
     }
 
     public void connect(){
-        // TODO: Check if i can just pass the spotifyappremote object from the main activity
         // Spotify connection
         ConnectionParams connectionParams =
                 new ConnectionParams.Builder(CLIENT_ID)
@@ -340,12 +364,14 @@ public class SongActivity extends AppCompatActivity {
         slices.get(p).times[1] = r;
     }
 
+    // Determines if two doubles are close enough. Used to prevent infinite Recursion with the Seekbar.
     public boolean closeEnough(double l, double r){
         double val = l - r;
         if (val < 0) val *= -1;
         return val < 0.5;
     }
 
+    // When the top left back arrow
     @Override
     public boolean onSupportNavigateUp() {
         onBackPressed();
@@ -414,6 +440,7 @@ public class SongActivity extends AppCompatActivity {
         }
     }
 
+    // Print the slices to the console
     public void printSlice(){
         System.out.println("Printing slice");
         for(int i = 0; i < slices.size(); i++){
@@ -421,10 +448,11 @@ public class SongActivity extends AppCompatActivity {
         }
     }
 
+    // Sort and remove overlap in slices arraylist
     public boolean clean(){
         boolean error = false;
 
-        // Sort the arraylist by the first number first
+        // Sort the arraylist by the first number first (Insertion or Selection sort)
         printSlice();
         ArrayList<Slice> temp = new ArrayList<>();
         int length = slices.size();
@@ -443,11 +471,10 @@ public class SongActivity extends AppCompatActivity {
         for(int i = 0; i < slices.size(); i++){
             System.out.println(Arrays.toString(temp.get(i).times));
         }
-         printSlice();
+        printSlice();
         slices = temp;
-        // printSlice();
 
-        // Check if there is any overlap
+        // Check and remove any overlap
         for(int i = 0; i < slices.size() - 1; i++){
             Slice first = slices.get(i);
             Slice second = slices.get(i + 1);
@@ -470,7 +497,7 @@ public class SongActivity extends AppCompatActivity {
         JSONObject playlist = (JSONObject) ((jsonObject.has(playlistUri)) ? jsonObject.get(playlistUri) : new JSONObject());
         JSONObject newSong = new JSONObject();
 
-        // S0rt and clean the Slice ArrayList
+        // S0rt and clean the Slice ArrayList if this request wasn't made by an edit text or seekbar
         if (!isEditText) if (clean()) Snackbar.make(sliceRecycler, "The problem with the slices has been removed", Snackbar.LENGTH_SHORT).show();
 
         // Add the slices into the json file
@@ -486,12 +513,14 @@ public class SongActivity extends AppCompatActivity {
         printSlice();
         System.out.println(newSong);
 
+        // Replace or add the new JSONObject into the playlist object
         if (playlist.has(model.uri)) playlist.remove(model.uri);
         if (slices.size() != 0) playlist.put(model.uri, newSong);
-
         if (!jsonObject.has(playlistUri)) jsonObject.put(playlistUri, playlist);
         System.out.println(jsonObject.toString());
         write(jsonObject.toString());
+
+        // If not an edit text or seekbar making the request, load from the json file to ensure its accurate and update the ui
         if (!isEditText) load();
     }
 
@@ -514,10 +543,13 @@ public class SongActivity extends AppCompatActivity {
     // Add a slice to the ArrayList and Adapter
     public void addSlice(View v){
         try {
+
+            // Hard limit on number of slices because of the default recycler values
             if (slices.size() > 20){
                 Snackbar.make(v, "Slice can only handle 20 slices at the moment", Snackbar.LENGTH_SHORT).show();
                 return;
             }
+
             System.out.println("Adding a slice");
             save(false);
             Slice brand_new = new Slice();
@@ -526,6 +558,8 @@ public class SongActivity extends AppCompatActivity {
             brand_new.number = slices.size();
             slices.add(brand_new);
             printSlice();
+
+            // We do not save after addign the item to the slices list
             sliceRecycler.getRecycledViewPool().clear();
             sliceAdapter.notifyDataSetChanged();
         }
@@ -567,33 +601,22 @@ public class SongActivity extends AppCompatActivity {
 
     }
 
-//    public void saveData(View v) {
-//        try {
-//            save(false);
-//        }
-//        catch(JSONException e){
-//            e.printStackTrace();
-//        }
-//    }
-
-
 
     // Adapter class
     public static class FindSlice extends RecyclerView.ViewHolder{
         EditText left, right;
-        TextView number;
-        Button save, delete;
+        Button delete;
         CrystalRangeSeekbar seekbar;
 
         public FindSlice(@NonNull View itemView) {
             super(itemView);
             left = itemView.findViewById(R.id.slisce_template_left_time_EditText);
             right = itemView.findViewById(R.id.slice_template_right_time_EditText);
-            // save = itemView.findViewById(R.id.slice_template_save_button);
             delete = itemView.findViewById(R.id.slice_template_delete_button);
             seekbar = itemView.findViewById(R.id.slice_template_range_seekbar);
         }
     }
+
 
     // Thread to play the song
     public class PlaySongThread extends Thread{
@@ -604,10 +627,10 @@ public class SongActivity extends AppCompatActivity {
         @Override
         public void run() {
             // Todo: Make sure the pauses are correct
-            // Todo: Learn how to Interrupt the thread correctly
             String st;
             int iter = 0;
 
+            // Go to 0 seconds on the current song to make sure no slices are skipped and give slice time to catch up (Pause stuff)
             check();
             CallResult <Empty> cr = mSpotifyAppRemote.getPlayerApi().seekTo(0);
             Result<Empty> r = cr.await(1, TimeUnit.SECONDS);
@@ -615,16 +638,12 @@ public class SongActivity extends AppCompatActivity {
                 System.out.println("Went to 0 seconds correctly");
             }
             else{
+                System.out.println(r.getErrorMessage());
+                if (r.getErrorMessage() == "Result was not delivered on time") Snackbar.make(sliceRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
                 r.getError().printStackTrace();
                 System.out.println("Was not able to go to 0");
             }
 
-
-//            try {
-//                Thread.sleep(800);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
             System.out.println(isPlaying());
             do{
                 st = getCurrent();
@@ -635,7 +654,6 @@ public class SongActivity extends AppCompatActivity {
                     int second = s.times[1];
 
                     // Currently in a Slice
-                    // Last condition may be a problem because idt we can store the very last millisecond with the range bar
                     if (seconds >= first && (seconds <= second || second == -1 || second == duration)){
                         remaining = true;
                         break;
@@ -665,8 +683,6 @@ public class SongActivity extends AppCompatActivity {
                 }
 
                 // Skipping the song
-                System.out.println("Remaining is " + remaining);
-
                 if (!remaining){
                     System.out.println("Skipping");
                     check();
@@ -685,12 +701,16 @@ public class SongActivity extends AppCompatActivity {
                     return;
                 }
                 System.out.println("Listening to " + st);
+                System.out.println("Remaining is " + remaining);
+
+                // iter is here to make sure this thread doesn't end prematurely because it takes a second for spotify api to recognize what we are listening to
                 iter++;
             }
             while((isPlaying() && st.equals(model.uri)) || iter < 10);
             System.out.println("Loop over");
         }
 
+        // Check if we are disconnected from spotify and reconnect if so
         private void check(){
             if (!mSpotifyAppRemote.isConnected()) {
                 runOnUiThread(new Runnable() {
@@ -710,13 +730,13 @@ public class SongActivity extends AppCompatActivity {
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
             if (playerStateResult.isSuccessful()) {
                 PlayerState playerState = playerStateResult.getData();
-                // have some fun with playerState
                 return !playerState.isPaused;
             } else {
                 Throwable error = playerStateResult.getError();
                 error.printStackTrace();
+                System.out.println(error.getMessage());
+                if (error.getMessage() == "Result was not delivered on time") Snackbar.make(sliceRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
                 return false;
-                // try to have some fun with the error
             }
         }
 
@@ -727,7 +747,6 @@ public class SongActivity extends AppCompatActivity {
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
             if (playerStateResult.isSuccessful()) {
                 PlayerState playerState = playerStateResult.getData();
-                // have some fun with playerState
                 seconds = (int) playerState.playbackPosition;
                 if (playerState.track != null){
                     return playerState.track.uri;
@@ -735,8 +754,9 @@ public class SongActivity extends AppCompatActivity {
             } else {
                 Throwable error = playerStateResult.getError();
                 error.printStackTrace();
+                System.out.println(error.getMessage());
+                if (error.getMessage() == "Result was not delivered on time") Snackbar.make(sliceRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
 
-                // try to have some fun with the error
             }
             return "";
         }

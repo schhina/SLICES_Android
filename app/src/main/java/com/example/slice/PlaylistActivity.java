@@ -79,9 +79,8 @@ public class PlaylistActivity extends AppCompatActivity {
     // Getting new songs stuff
     private int offset = 0;
     private int song_total = 0;
-    boolean waiting = true;
 
-    // Running the playlist stuff
+    // Playlist model
     public com.example.slice.Playlist model;
 
     // RecyclerView Stuff
@@ -98,24 +97,28 @@ public class PlaylistActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_playlist_test);
+
+        // Toolbar stuff
         Toolbar toolbar = findViewById(R.id.toolbar_playlist);;
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
 
+        // Connect to spotify
         connect();
 
-        // Views and Intent
+        // Get playlist info from intent
         String playlistUri = (String) getIntent().getExtras().get("playlistUri");
         String playlistName = (String) getIntent().getExtras().get("playlistName");
         String id = (String) getIntent().getExtras().get("playlistId");
         String imageUrl = getIntent().getExtras().getString("image");
+        token = (String) getIntent().getExtras().get("token");
+
+
+        // Update views and model class
         ImageView imageview = findViewById(R.id.playlist_image);
         Picasso.get().load(imageUrl).into(imageview);
         model = new com.example.slice.Playlist(playlistUri, playlistName, id, "");
-        token = (String) getIntent().getExtras().get("token");
-        TextView name = findViewById(R.id.playlist_name_textview);
-        // name.setText(model.name);
         CollapsingToolbarLayout toolBarLayout = (CollapsingToolbarLayout) findViewById(R.id.toolbar_layout);
         toolBarLayout.setTitle(model.name);
         toolBarLayout.setCollapsedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
@@ -127,6 +130,7 @@ public class PlaylistActivity extends AppCompatActivity {
         songRecycler.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
         // ArrayList init
+        // Maybe change this with OKHttp
         if (!token.equals("")){
             SpotifyApi api = new SpotifyApi();
             api.setAccessToken(token);
@@ -214,8 +218,6 @@ public class PlaylistActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
-        connect();
-
         // Adapter
         songAdapter = new RecyclerView.Adapter<FindSong>() {
             @NonNull
@@ -228,7 +230,7 @@ public class PlaylistActivity extends AppCompatActivity {
 
             @Override
             public void onBindViewHolder(@NonNull FindSong holder, int position) {
-                // Update Fields
+                // Update Fields and views
                 Track songModel = song_list.get(position);
                 holder.name.setText(songModel.name);
                 holder.artist.setText(songModel.artist);
@@ -268,13 +270,13 @@ public class PlaylistActivity extends AppCompatActivity {
         scrollView.getViewTreeObserver().addOnScrollChangedListener(new ViewTreeObserver.OnScrollChangedListener() {
             @Override
             public void onScrollChanged() {
-                View view = (View) scrollView.getChildAt(scrollView.getChildCount() - 1);
 
+                View view = (View) scrollView.getChildAt(scrollView.getChildCount() - 1);
                 int diff = (view.getBottom() - (scrollView.getHeight() + scrollView
                         .getScrollY()));
-
                 if (diff == 0) {
                     boolean running = false;
+                    // Check if any other thread is looking for songs
                     for (Thread t : Thread.getAllStackTraces().keySet()) {
                         System.out.println(t.getName());
                         if (t.getName().equals("AddingSongsToPlaylistThread")) {
@@ -282,12 +284,12 @@ public class PlaylistActivity extends AppCompatActivity {
                             break;
                         }
                     }
+                    // Start a thread looking for more songs
                     if (!running && song_list.size() != song_total){
                         Snackbar.make(view, "Fetching more songs", Snackbar.LENGTH_SHORT).show();
                         AddSongsThread thread = new AddSongsThread();
                         thread.setName("AddingSongsToPlaylistThread");
                         thread.start();
-                        // Toast.makeText(getApplicationContext(), (addMoreToRecycle() ? "added more to list" : "couldnt add more"), Toast.LENGTH_SHORT).show();
                     }
                 }
             }
@@ -306,24 +308,26 @@ public class PlaylistActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+
+            // Clear playlist button
             case R.id.action_clear_playlist:
-                Toast.makeText(getApplicationContext(), "Gonna clear slices", Toast.LENGTH_SHORT).show();
+                // Toast.makeText(getApplicationContext(), "Gonna clear slices", Toast.LENGTH_SHORT).show();
 
-
+                // Open a dialog box
                 clearDataDialogBuilder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.myDialog));
                 final View popUpView = getLayoutInflater().inflate(R.layout.clear_playlist_popup, null);
                 Button confirm = popUpView.findViewById(R.id.clear_playlist_confirm_button);
                 Button decline = popUpView.findViewById(R.id.clear_playlist_decline_button);
-
+                // Clear the data
                 confirm.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
                         clear();
-                        Toast.makeText(getApplicationContext(), "Cleared Slice data", Toast.LENGTH_SHORT).show();
+                        Snackbar.make(songRecycler, "Cleared Slice data", Snackbar.LENGTH_SHORT).show();
                         clearDataDialog.dismiss();
                     }
                 });
-
+                // Don't clear the data
                 decline.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -338,8 +342,11 @@ public class PlaylistActivity extends AppCompatActivity {
 
                 return true;
 
+            // Open playlist in Spotify
             case R.id.action_open_spotify_playlist:
                 if (SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())){
+
+                    // Open playlist on spotify app
                     Intent intent = new Intent(Intent.ACTION_VIEW);
                     intent.setData(Uri.parse(model.uri));
                     intent.putExtra(Intent.EXTRA_REFERRER,
@@ -347,6 +354,8 @@ public class PlaylistActivity extends AppCompatActivity {
                     startActivity(intent);
                 }
                 else{
+
+                    // Open playlist on spotify website
                     String cleaned;
                     if (model.uri.length() > 18) cleaned = model.uri.substring(17);
                     else cleaned = "";
@@ -369,7 +378,9 @@ public class PlaylistActivity extends AppCompatActivity {
         }
     }
 
+    // Play the playlist with slices
     public void play(View v) {
+
         // End any existing threads that are playing playlists or songs
         for (Thread t : Thread.getAllStackTraces().keySet()) {
             System.out.println(t.getName());
@@ -380,10 +391,9 @@ public class PlaylistActivity extends AppCompatActivity {
                 t.interrupt();
             }
         }
+
         // Play selected playlist and start new thread to slice songs
-        if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())){
-            Snackbar.make(v, "Spotify must be installed to use this feature", Snackbar.LENGTH_SHORT).show();
-        }
+        if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) Snackbar.make(v, "Spotify must be installed to use this feature", Snackbar.LENGTH_SHORT).show();
         else{
             if (!mSpotifyAppRemote.isConnected()) connect();
             try{
@@ -401,8 +411,8 @@ public class PlaylistActivity extends AppCompatActivity {
 
     }
 
+    // Clear all existing slices for the playlist
     public void clear(){
-        // Clear all existing slices for the playlist
         try {
             String json = getSlices();
             JSONObject jsonObject = (json.equals("")) ? new JSONObject() : new JSONObject(json);
@@ -417,8 +427,8 @@ public class PlaylistActivity extends AppCompatActivity {
         }
     }
 
+    // Save the passed json into the file
     public void save(String s){
-        // Save the passed json into the file
         try {
             File file = new File(getApplicationContext().getFilesDir(), "JSON_SLICES");
             FileWriter fileWriter = new FileWriter(file);
@@ -431,8 +441,8 @@ public class PlaylistActivity extends AppCompatActivity {
         }
     }
 
+    // Read the json file and return it as a string
     public String getSlices() {
-        // Read the json file and return it as a string
         try {
             File file = new File(getApplicationContext().getFilesDir(), "JSON_SLICES");
             FileReader fileReader = new FileReader(file);
@@ -459,6 +469,7 @@ public class PlaylistActivity extends AppCompatActivity {
 
     }
 
+    // Back button on the top leftd
     @Override
     public boolean onSupportNavigateUp() {
         onBackPressed();
@@ -573,6 +584,7 @@ public class PlaylistActivity extends AppCompatActivity {
         int seconds = 0;
         int duration = 0;
         SpotifyAppRemote mSpotifyAppRemote;
+        boolean shown = false;
 
         // init the fields
         RunPlaylistThread(String u, SpotifyAppRemote spotifyAppRemote){
@@ -590,6 +602,7 @@ public class PlaylistActivity extends AppCompatActivity {
             // TODO:: Make sure all the timing is right for pauses
             // TODO:: If start and end time for slice are the same, skip it
 
+            // Move current song to 0 seconds to let the spotify api catch up and make sure we don't skip any slices
             check();
             CallResult <Empty> cr = mSpotifyAppRemote.getPlayerApi().seekTo(0);
             Result<Empty> r = cr.await(1, TimeUnit.SECONDS);
@@ -597,6 +610,11 @@ public class PlaylistActivity extends AppCompatActivity {
                 System.out.println("Went to 0 seconds correctly");
             }
             else{
+                System.out.println(r.getErrorMessage());
+                if (r.getErrorMessage() == "Result was not delivered on time." && !shown) {
+                    Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                    shown = true;
+                }
                 r.getError().printStackTrace();
                 System.out.println("Was not able to go to 0");
             }
@@ -618,7 +636,6 @@ public class PlaylistActivity extends AppCompatActivity {
                         int second = slices.get(curr).get(i)[1];
 
                         // Song is currently in a slice so all good
-                        // Same issue with the last condition as in the songActivity one
                         if (seconds >= first && (seconds <= second || second == -1 || second == duration)){
                             System.out.println("Currently in a slice");
                             remaining = true;
@@ -669,7 +686,7 @@ public class PlaylistActivity extends AppCompatActivity {
                     e.printStackTrace();
                     return;
                 }
-                // System.out.println("New iteration");
+                // Iter makes sure we don't prematurely end playback because Spotify API takes a second to catch up
                 iter ++;
             }
             while ((isPlaying() && !curr.equals("")) || iter < 10);
@@ -679,19 +696,17 @@ public class PlaylistActivity extends AppCompatActivity {
 
         }
 
+        // Load the slices from the json file into the arraylist
         private HashMap<String, ArrayList<int[]>> load(){
             HashMap<String, ArrayList<int[]>> slices = new HashMap<>();
             try {
                 String json = getSlices();
                 JSONObject jsonObject = (json.equals("")) ? new JSONObject() : new JSONObject(json);
                 if (jsonObject.has(model.uri)){
-                    // System.out.println("Found the playlist");
                     JSONObject playlist = (JSONObject) jsonObject.get(model.uri);
-                    // System.out.println("have the playlist");
                     for (Iterator<String> it = playlist.keys(); it.hasNext(); ) {
                         String s = it.next();
                         JSONObject song = (JSONObject) playlist.get(s);
-                        // System.out.println("Found the songs " + s);
                         ArrayList<int[]> temp = new ArrayList<>();
                         for (int j = 0; j < song.names().length(); j += 2) {
                             String name = (String) song.names().get(j);
@@ -701,13 +716,6 @@ public class PlaylistActivity extends AppCompatActivity {
                             int [] t = {first, second};
                             temp.add(t);
                         }
-//                        while (song.has("slice_" + i + "_start")){
-//                            int first = song.getInt("slice_" + i + "_start");
-//                            int second = song.getInt("slice_" + i + "_end");
-//                            int[] t = {first, second};
-//                            temp.add(t);
-//                            i += 1;
-//                        }
                         slices.put(s, temp);
 
                     }
@@ -719,6 +727,7 @@ public class PlaylistActivity extends AppCompatActivity {
             return slices;
         }
 
+        // Reconnect to spotify if disconnected
         private void check(){
             if (!mSpotifyAppRemote.isConnected()) {
                 runOnUiThread(new Runnable() {
@@ -731,8 +740,7 @@ public class PlaylistActivity extends AppCompatActivity {
             }
         }
 
-
-
+        // Check if spotify is playing anything
         private boolean isPlaying(){
             check();
             CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
@@ -743,10 +751,16 @@ public class PlaylistActivity extends AppCompatActivity {
             } else {
                 Throwable error = playerStateResult.getError();
                 error.printStackTrace();
+                System.out.println(error.getMessage());
+                if (error.getMessage() == "Result was not delivered on time." && !shown) {
+                    Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                    shown = true;
+                }
                 return false;
             }
         }
 
+        // Retrieve the current song
         private String getCurrent(){
             check();
             CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
@@ -761,7 +775,11 @@ public class PlaylistActivity extends AppCompatActivity {
             } else {
                 Throwable error = playerStateResult.getError();
                 error.printStackTrace();
-                // System.out.println("error') in the get current");
+                System.out.println(error.getMessage());
+                if (error.getMessage() == "Result was not delivered on time." && !shown){
+                    Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                    shown = true;
+                }
             }
             return "";
         }

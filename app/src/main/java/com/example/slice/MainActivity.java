@@ -98,16 +98,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        // Toolbar Stuff
+        // Toolbar and Appbar Stuff
         Toolbar toolbar = findViewById(R.id.toolbar_main_activity);;
         setSupportActionBar(toolbar);
-//        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
-//        getSupportActionBar().setDisplayShowHomeEnabled(true);
         CollapsingToolbarLayout toolBarLayout =  findViewById(R.id.toolbar_layout);
         toolBarLayout.setTitle(getTitle());
         toolBarLayout.setCollapsedTitleTypeface(Typeface.create("monospace", Typeface.BOLD));
         toolBarLayout.setExpandedTitleTypeface(Typeface.create("monospace", Typeface.BOLD));
-
         AppBarLayout appBar = findViewById(R.id.app_bar);
         appBar.setExpanded(false);
 
@@ -119,15 +116,11 @@ public class MainActivity extends AppCompatActivity {
         DividerItemDecoration dividerItemDecoration = new DividerItemDecoration(playlistRecycler.getContext(), layoutManager.getOrientation());
         playlistRecycler.addItemDecoration(dividerItemDecoration);
         scrollView = findViewById(R.id.main_nested_scroll);
-        // ViewCompat.setNestedScrollingEnabled(playlistRecycler, false);
-
-
 
         // Arraylist init
         builder.setScopes(new String[]{"streaming"});
         AuthenticationRequest request = builder.build();
         AuthenticationClient.openLoginActivity(this, REQUEST_CODE, request);
-
 
     }
 
@@ -141,15 +134,16 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         switch (item.getItemId()) {
+            // Clear button was pressed
             case R.id.action_clear:
-                Toast.makeText(getApplicationContext(), "Gonna clear slices", Toast.LENGTH_SHORT).show();
 
-
+                // Open dialog box to confirm clearing
                 clearDataDialogBuilder = new AlertDialog.Builder(new ContextThemeWrapper(this, R.style.myDialog));
                 final View popUpView = getLayoutInflater().inflate(R.layout.clear_all_slices_popup, null);
                 Button confirm = popUpView.findViewById(R.id.clear_all_confirm);
                 Button decline = popUpView.findViewById(R.id.clear_all_decline);
 
+                // Delete all slice data
                 confirm.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -159,6 +153,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
+                // Don't delete all slice data
                 decline.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View view) {
@@ -166,16 +161,16 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-
+                // Open dialog box
                 clearDataDialogBuilder.setView(popUpView);
                 clearDataDialog = clearDataDialogBuilder.create();
                 clearDataDialog.show();
 
                 return true;
 
+            // Open about page
             case R.id.action_about:
-                Toast.makeText(getApplicationContext(), "gonna go to about page on website", Toast.LENGTH_SHORT).show();
-                startActivity(new Intent(getApplicationContext(), Song_Scrolling_Activity.class));
+                Snackbar.make(playlistRecycler, "About us page coming soon!", Snackbar.LENGTH_SHORT).show();
                 return true;
 
             default:
@@ -270,7 +265,6 @@ public class MainActivity extends AppCompatActivity {
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        Toast.makeText(getApplicationContext(), model.name, Toast.LENGTH_SHORT).show();
                         Intent intent = new Intent(getApplicationContext(), PlaylistActivity.class);
                         intent.putExtra("playlistName", model.name);
                         intent.putExtra("playlistUri", model.uri);

@@ -23,6 +23,7 @@ import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.google.android.material.appbar.CollapsingToolbarLayout;
 import com.google.android.material.snackbar.Snackbar;
@@ -392,16 +393,24 @@ public class PlaylistActivity extends AppCompatActivity {
         // Play selected playlist and start new thread to slice songs
         if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) Snackbar.make(v, "Spotify must be installed to use this feature", Snackbar.LENGTH_SHORT).show();
         else{
-            if (!mSpotifyAppRemote.isConnected()) connect();
-            try{
-                mSpotifyAppRemote.getPlayerApi().play(model.uri);
-                RunPlaylistThread thread = new RunPlaylistThread(model.uri, mSpotifyAppRemote);
-                thread.setName("Playlist Runner");
-                thread.start();
+            if (!mSpotifyAppRemote.isConnected()) {
+                // Snackbar.make(findViewById(android.R.id.content), "Wait a few seconds before trying again", Snackbar.LENGTH_SHORT);
+                connect();
+                Toast.makeText(this, "Wait a few seconds before trying again", Toast.LENGTH_SHORT).show();
+                System.out.println("Wasn't connected to spotify at first");
             }
-            catch(Exception e){
-                e.printStackTrace();
+            else{
+                try{
+                    mSpotifyAppRemote.getPlayerApi().play(model.uri);
+                    RunPlaylistThread thread = new RunPlaylistThread(model.uri, mSpotifyAppRemote);
+                    thread.setName("Playlist Runner");
+                    thread.start();
+                }
+                catch(Exception e){
+                    e.printStackTrace();
+                }
             }
+
 
         }
 
@@ -582,6 +591,7 @@ public class PlaylistActivity extends AppCompatActivity {
         int duration = 0;
         SpotifyAppRemote mSpotifyAppRemote;
         boolean shown = false;
+        boolean isConnecting = false;
 
         // init the fields
         RunPlaylistThread(String u, SpotifyAppRemote spotifyAppRemote){
@@ -600,7 +610,6 @@ public class PlaylistActivity extends AppCompatActivity {
             // TODO:: If start and end time for slice are the same, skip it
 
             // Move current song to 0 seconds to let the spotify api catch up and make sure we don't skip any slices
-            check();
             CallResult <Empty> cr = mSpotifyAppRemote.getPlayerApi().seekTo(0);
             Result<Empty> r = cr.await(1, TimeUnit.SECONDS);
             if (r.isSuccessful()){
@@ -608,7 +617,8 @@ public class PlaylistActivity extends AppCompatActivity {
             }
             else{
                 System.out.println(r.getErrorMessage());
-                if (r.getErrorMessage() == "Result was not delivered on time." && !shown) {
+                String str = r.getErrorMessage();
+                if (str.equals("Result was not delivered on time.") && !shown) {
                     Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
                     shown = true;
                 }
@@ -686,7 +696,7 @@ public class PlaylistActivity extends AppCompatActivity {
                 // Iter makes sure we don't prematurely end playback because Spotify API takes a second to catch up
                 iter ++;
             }
-            while ((isPlaying() && !curr.equals("")) || iter < 10);
+            while ((isPlaying() && !curr.equals("")) || iter < 10 || !mSpotifyAppRemote.isConnected());
             System.out.println("is playing is " + isPlaying());
             System.out.println("curr is " + curr);
             System.out.println("Loop over");
@@ -726,7 +736,8 @@ public class PlaylistActivity extends AppCompatActivity {
 
         // Reconnect to spotify if disconnected
         private void check(){
-            if (!mSpotifyAppRemote.isConnected()) {
+            if (!mSpotifyAppRemote.isConnected() && !isConnecting) {
+                isConnecting = true;
                 runOnUiThread(new Runnable() {
                     @Override
                     public void run() {
@@ -734,6 +745,9 @@ public class PlaylistActivity extends AppCompatActivity {
                         connect();
                     }
                 });
+            }
+            else {
+                isConnecting = false;
             }
         }
 
@@ -749,10 +763,12 @@ public class PlaylistActivity extends AppCompatActivity {
                 Throwable error = playerStateResult.getError();
                 error.printStackTrace();
                 System.out.println(error.getMessage());
-                if (error.getMessage() == "Result was not delivered on time." && !shown) {
+                if (error.getMessage() == ("Result was not delivered on time.")&& !shown) {
                     Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                    System.out.println("Wasn't delivered on time");
                     shown = true;
                 }
+
                 return false;
             }
         }
@@ -773,10 +789,11 @@ public class PlaylistActivity extends AppCompatActivity {
                 Throwable error = playerStateResult.getError();
                 error.printStackTrace();
                 System.out.println(error.getMessage());
-                if (error.getMessage() == "Result was not delivered on time." && !shown){
+                if (error.getMessage() == ("Result was not delivered on time.") && !shown){
                     Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
                     shown = true;
                 }
+
             }
             return "";
         }

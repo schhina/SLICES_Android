@@ -74,7 +74,6 @@ public class MainActivity extends AppCompatActivity {
     private static final String CLIENT_ID = "71ea8dc10ab14aea83e374692c3fea85";
     private static final String REDIRECT_URI = "http://127.0.0.1:8000/";
     private static final int REQUEST_CODE = 1337;
-    private SpotifyAppRemote mSpotifyAppRemote;
     private String token = "";
     AuthenticationRequest.Builder builder =
             new AuthenticationRequest.Builder(CLIENT_ID, AuthenticationResponse.Type.TOKEN, REDIRECT_URI);
@@ -205,11 +204,13 @@ public class MainActivity extends AppCompatActivity {
                     // Handle error response
                     System.out.println("Token wasn't retrieved");
                     System.out.println(response.getError());
+                    Snackbar.make(playlistRecycler, "Unable to connect to Spotify", Snackbar.LENGTH_SHORT).show();
                     break;
 
                 // Most likely auth flow was cancelled
                 default:
                     // Handle other cases
+                    Snackbar.make(findViewById(R.id.content), "Trouble connecting to Spotify", Snackbar.LENGTH_SHORT).show();
                     System.out.println("IDK what happened with the token getting");
                     break;
             }
@@ -222,27 +223,6 @@ public class MainActivity extends AppCompatActivity {
 
         // Connect to spotify acocunt
         if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) Snackbar.make(playlistRecycler, "Download Spotify to fully use Slice!", Snackbar.LENGTH_SHORT).show();
-
-        ConnectionParams connectionParams =
-                new ConnectionParams.Builder(CLIENT_ID)
-                        .setRedirectUri(REDIRECT_URI)
-                        .showAuthView(true)
-                        .build();
-
-        SpotifyAppRemote.connect(this, connectionParams,
-                new Connector.ConnectionListener() {
-
-                    @Override
-                    public void onConnected(SpotifyAppRemote spotifyAppRemote) {
-                        mSpotifyAppRemote = spotifyAppRemote;
-                        Log.d("MainActivity", "Connected! Yay!");
-                    }
-
-                    @Override
-                    public void onFailure(Throwable throwable) {
-                        Log.e("MainActivity", throwable.getMessage(), throwable);
-                    }
-                });
 
         // Init for adapter
         playlistAdapter = new RecyclerView.Adapter<FindPlaylist>() {
@@ -322,7 +302,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStop() {
         super.onStop();
-        SpotifyAppRemote.disconnect(mSpotifyAppRemote);
     }
 
     // Initialize the arraylist

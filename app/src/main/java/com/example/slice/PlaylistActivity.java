@@ -593,6 +593,7 @@ public class PlaylistActivity extends AppCompatActivity {
         boolean shown = false;
         boolean isConnecting = false;
 
+
         // init the fields
         RunPlaylistThread(String u, SpotifyAppRemote spotifyAppRemote){
             uri = u;
@@ -605,6 +606,7 @@ public class PlaylistActivity extends AppCompatActivity {
             String curr;
             int iter = 0;
             HashMap<String, ArrayList<int[]>> slices;
+            boolean confirmed = false;
 
             // TODO:: Make sure all the timing is right for pauses
             // TODO:: If start and end time for slice are the same, skip it
@@ -630,6 +632,11 @@ public class PlaylistActivity extends AppCompatActivity {
 
             // Do slice stuff
             do{
+
+                if (!confirmed && mSpotifyAppRemote.isConnected()){
+                    Snackbar.make(songRecycler, "Playing this playlist!", Snackbar.LENGTH_SHORT).show();
+                    confirmed = true;
+                }
                 curr = getCurrent();
                 slices = load();
 

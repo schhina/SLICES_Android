@@ -629,6 +629,7 @@ public class SongActivity extends AppCompatActivity {
             // Todo: Make sure the pauses are correct
             String st;
             int iter = 0;
+            boolean confirmed = false;
 
             // Go to 0 seconds on the current song to make sure no slices are skipped and give slice time to catch up (Pause stuff)
             check();
@@ -649,6 +650,11 @@ public class SongActivity extends AppCompatActivity {
 
             System.out.println(isPlaying());
             do{
+                if (!confirmed && mSpotifyAppRemote.isConnected()){
+                    Snackbar.make(sliceRecycler, "Playing this song!", Snackbar.LENGTH_SHORT).show();
+                    confirmed = true;
+                }
+
                 st = getCurrent();
                 boolean remaining = false;
                 if (slices.size() == 0) remaining = true;

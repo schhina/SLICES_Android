@@ -4,11 +4,13 @@ import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Editable;
@@ -75,6 +77,7 @@ public class SongActivity extends AppCompatActivity {
     private static final String REDIRECT_URI = "http://127.0.0.1:8000/";
     private static final int REQUEST_CODE = 1337;
 
+    Menu menu;
 
 
     @Override
@@ -262,7 +265,17 @@ public class SongActivity extends AppCompatActivity {
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         // Inflate the menu; this adds items to the action bar if it is present.
+        this.menu = menu;
         getMenuInflater().inflate(R.menu.song_menu, menu);
+        for (Thread t : Thread.getAllStackTraces().keySet()) {
+            System.out.println(t.getName());
+            if (t.getName().equals("PlaySongThread")) {
+                PlaySongThread rpt = (PlaySongThread) t;
+                if (model.uri.equals(rpt.trackUri)){
+                    menu.findItem(R.id.action_play_song).setIcon(ContextCompat.getDrawable(this, R.drawable.ic_baseline_pause_24));
+                }
+            }
+        }
         return true;
     }
 
@@ -567,20 +580,33 @@ public class SongActivity extends AppCompatActivity {
     // Play the Current song by making a new thread
     public void playSong(View v){
         // Check if any other threads are playing something
+        boolean running = false;
         try {
             save(false);
             for (Thread t : Thread.getAllStackTraces().keySet()) {
                 System.out.println(t.getName());
                 if (t.getName().equals("PlaySongThread")) {
+                    PlaySongThread pst = (PlaySongThread) t;
+                    if (pst.trackUri.equals(model.uri)){
+                        menu.findItem(R.id.action_play_song).setIcon(ContextCompat.getDrawable(this, R.drawable.ic_baseline_pause_24));
+                        running = true;
+                    }
+                    pst.terminate();
                     t.interrupt();
                 }
                 if (t.getName().equals("Playlist Runner")) {
+                    PlaylistActivity.RunPlaylistThread rpt = (PlaylistActivity.RunPlaylistThread) t;
+                    rpt.terminate();
                     t.interrupt();
                 }
             }
 
             // Play the song and start the thread for slices
             if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) Snackbar.make(sliceRecycler, "Spotify must be installed to use this feature", Snackbar.LENGTH_SHORT).show();
+            else if (running){
+                mSpotifyAppRemote.getPlayerApi().pause();
+                menu.findItem(R.id.action_play_song).setIcon(ContextCompat.getDrawable(this, R.drawable.ic_baseline_pause_24));
+            }
             else{
                 if (!mSpotifyAppRemote.isConnected()) {
                     // Snackbar.make(findViewById(android.R.id.content), "Wait a few seconds before trying again", Snackbar.LENGTH_SHORT);
@@ -588,6 +614,7 @@ public class SongActivity extends AppCompatActivity {
                     Toast.makeText(this, "Wait a few seconds before trying again", Toast.LENGTH_SHORT).show();
                     System.out.println("Wasn't connected to spotify at first");
                 }
+                menu.findItem(R.id.action_play_song).setIcon(ContextCompat.getDrawable(this, R.drawable.ic_baseline_pause_24));
                 mSpotifyAppRemote.getPlayerApi().play(model.uri);
                 PlaySongThread thread = new PlaySongThread();
                 thread.setName("PlaySongThread");
@@ -622,11 +649,14 @@ public class SongActivity extends AppCompatActivity {
         int duration = model.duration_ms;
         boolean shown = false;
         boolean isConnecting = false;
+        boolean running = true;
+        String trackUri = model.uri;
 
         // Check the current song for slices
         @Override
         public void run() {
             // Todo: Make sure the pauses are correct
+            if (!running) return;
             String st;
             int iter = 0;
             boolean confirmed = false;
@@ -689,6 +719,7 @@ public class SongActivity extends AppCompatActivity {
                             Thread.sleep(500);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
+                            pause();
                             return;
                         }
                         break;
@@ -704,6 +735,7 @@ public class SongActivity extends AppCompatActivity {
                         Thread.sleep(500);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
+                        pause();
                         return;
                     }
                 }
@@ -711,6 +743,7 @@ public class SongActivity extends AppCompatActivity {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    pause();
                     return;
                 }
                 System.out.println("Listening to " + st);
@@ -719,12 +752,19 @@ public class SongActivity extends AppCompatActivity {
                 // iter is here to make sure this thread doesn't end prematurely because it takes a second for spotify api to recognize what we are listening to
                 iter++;
             }
-            while((st.equals(model.uri)) || iter < 10 || !mSpotifyAppRemote.isConnected());
+            while(running && (st.equals(model.uri)) || iter < 10 || !mSpotifyAppRemote.isConnected());
             System.out.println("Loop over");
+
+            pause();
+        }
+
+        private void pause(){
+            terminate();
         }
 
         // Check if we are disconnected from spotify and reconnect if so
         private void check(){
+            if (!running) return;
             if (!mSpotifyAppRemote.isConnected() && !isConnecting) {
                 isConnecting = true;
                 runOnUiThread(new Runnable() {
@@ -742,6 +782,7 @@ public class SongActivity extends AppCompatActivity {
 
         // Checks if anything is playing in spotify
         private boolean isPlaying(){
+            if (!running) return false;
             check();
             CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
@@ -762,6 +803,7 @@ public class SongActivity extends AppCompatActivity {
 
         // Returns the current song uri and updates the seconds global variable
         private String getCurrent(){
+            if (!running) return "break'";
             check();
             CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
@@ -782,6 +824,16 @@ public class SongActivity extends AppCompatActivity {
 
             }
             return "";
+        }
+
+        public void terminate(){
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    menu.findItem(R.id.action_play_song).setIcon(ContextCompat.getDrawable(getApplicationContext(), R.drawable.ic_baseline_play_arrow_24));
+                }
+            });
+            running = false;
         }
     }
 }

@@ -195,6 +195,7 @@ public class MainActivity extends AppCompatActivity {
                 case TOKEN:
                     // Handle successful response
                     token = response.getAccessToken();
+                    System.out.println("This is the state " + response.getState());
                     System.out.println(token);
                     InitArrayList();
                     break;

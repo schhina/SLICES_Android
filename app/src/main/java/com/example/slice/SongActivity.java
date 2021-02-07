@@ -655,6 +655,7 @@ public class SongActivity extends AppCompatActivity {
                     confirmed = true;
                 }
 
+                double sec = seconds/1000.0;
                 st = getCurrent();
                 boolean remaining = false;
                 if (slices.size() == 0) remaining = true;
@@ -662,14 +663,17 @@ public class SongActivity extends AppCompatActivity {
                     int first = s.times[0];
                     int second = s.times[1];
 
+                    double f = first/1000.0;
+                    double se = second/1000.0;
+
                     // Currently in a Slice
-                    if (seconds >= first && (seconds <= second || second == -1 || second == duration)){
+                    if ((seconds >= first || closeEnough(f, sec)) && (seconds <= second || closeEnough(se, sec) || second == duration)){
                         remaining = true;
                         break;
                     }
 
                     // Not currently in a slice and there is one in the future
-                    else if (seconds < first){
+                    else if (seconds < first && !closeEnough(f, sec)){
                         remaining = true;
                         check();
                         CallResult <Empty> callResult = mSpotifyAppRemote.getPlayerApi().seekTo(first);
@@ -715,7 +719,7 @@ public class SongActivity extends AppCompatActivity {
                 // iter is here to make sure this thread doesn't end prematurely because it takes a second for spotify api to recognize what we are listening to
                 iter++;
             }
-            while((isPlaying() && st.equals(model.uri)) || iter < 10 || !mSpotifyAppRemote.isConnected());
+            while((st.equals(model.uri)) || iter < 10 || !mSpotifyAppRemote.isConnected());
             System.out.println("Loop over");
         }
 

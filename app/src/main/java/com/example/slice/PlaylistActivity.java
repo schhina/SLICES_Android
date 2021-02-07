@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import android.content.Intent;
 import android.graphics.Typeface;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
 import android.util.Log;
@@ -26,13 +27,16 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.google.android.material.appbar.CollapsingToolbarLayout;
+import com.google.android.material.floatingactionbutton.FloatingActionButton;
 import com.google.android.material.snackbar.Snackbar;
 import com.spotify.android.appremote.api.ConnectionParams;
 import com.spotify.android.appremote.api.Connector;
 import com.spotify.android.appremote.api.SpotifyAppRemote;
 import com.spotify.protocol.client.CallResult;
 import com.spotify.protocol.client.Result;
+import com.spotify.protocol.client.Subscription;
 import com.spotify.protocol.types.Empty;
+import com.spotify.protocol.types.PlayerContext;
 import com.spotify.protocol.types.PlayerState;
 import com.squareup.picasso.Picasso;
 
@@ -91,6 +95,8 @@ public class PlaylistActivity extends AppCompatActivity {
     private AlertDialog.Builder clearDataDialogBuilder;
     private AlertDialog clearDataDialog;
 
+    FloatingActionButton fab;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -116,12 +122,24 @@ public class PlaylistActivity extends AppCompatActivity {
         // Update views and model class
         ImageView imageview = findViewById(R.id.playlist_image);
         Picasso.get().load(imageUrl).into(imageview);
+        fab = findViewById(R.id.playlist_fab);
+        fab.setImageResource(R.drawable.ic_baseline_play_arrow_24);
         model = new com.example.slice.Playlist(playlistUri, playlistName, id, "");
         CollapsingToolbarLayout toolBarLayout = (CollapsingToolbarLayout) findViewById(R.id.toolbar_layout);
         toolBarLayout.setTitle(model.name);
         toolBarLayout.setCollapsedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
         toolBarLayout.setExpandedTitleTypeface(Typeface.create("monospace", Typeface.NORMAL));
         scrollView = findViewById(R.id.playlist_scroll);
+
+        for (Thread t : Thread.getAllStackTraces().keySet()) {
+            System.out.println(t.getName());
+            if (t.getName().equals("Playlist Runner")) {
+                RunPlaylistThread rpt = (RunPlaylistThread) t;
+                if (model.uri.equals(rpt.playlistUri)){
+                    fab.setImageResource(R.drawable.ic_baseline_pause_24);
+                }
+            }
+        }
 
         // Recycler View
         songRecycler = findViewById(R.id.test_recycler_view);
@@ -379,10 +397,19 @@ public class PlaylistActivity extends AppCompatActivity {
     // Play the playlist with slices
     public void play(View v) {
 
+        boolean playing = false;
+
         // End any existing threads that are playing playlists or songs
         for (Thread t : Thread.getAllStackTraces().keySet()) {
             System.out.println(t.getName());
             if (t.getName().equals("Playlist Runner")) {
+
+                RunPlaylistThread rpt = (RunPlaylistThread) t;
+                if (model.uri.equals(rpt.playlistUri)){
+                    fab.setImageResource(R.drawable.ic_baseline_play_arrow_24);
+                    playing = true;
+                }
+                rpt.terminate();
                 t.interrupt();
             }
             if (t.getName().equals("PlaySongThread")){
@@ -392,6 +419,9 @@ public class PlaylistActivity extends AppCompatActivity {
 
         // Play selected playlist and start new thread to slice songs
         if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) Snackbar.make(v, "Spotify must be installed to use this feature", Snackbar.LENGTH_SHORT).show();
+        else if (playing){
+            mSpotifyAppRemote.getPlayerApi().pause();
+        }
         else{
             if (!mSpotifyAppRemote.isConnected()) {
                 // Snackbar.make(findViewById(android.R.id.content), "Wait a few seconds before trying again", Snackbar.LENGTH_SHORT);
@@ -401,6 +431,7 @@ public class PlaylistActivity extends AppCompatActivity {
             }
             else{
                 try{
+                    fab.setImageResource(R.drawable.ic_baseline_pause_24);
                     mSpotifyAppRemote.getPlayerApi().play(model.uri);
                     RunPlaylistThread thread = new RunPlaylistThread(model.uri, mSpotifyAppRemote);
                     thread.setName("Playlist Runner");
@@ -581,17 +612,26 @@ public class PlaylistActivity extends AppCompatActivity {
         }
     }
 
+    public boolean closeEnough(double l, double r){
+        double val = l - r;
+        if (val < 0) val *= -1;
+        return val < 0.5;
+    }
+
 
     // Thread class that runs the playlist
     class RunPlaylistThread extends Thread{
 
         // Fields to run the playlist
         String uri;
+        String playlistUri = model.uri;
         int seconds = 0;
         int duration = 0;
         SpotifyAppRemote mSpotifyAppRemote;
         boolean shown = false;
         boolean isConnecting = false;
+        String trackuri = "";
+        boolean running = true;
 
 
         // init the fields
@@ -602,6 +642,8 @@ public class PlaylistActivity extends AppCompatActivity {
 
         @Override
         public void run(){
+
+            if (!running) return;
 
             String curr;
             int iter = 0;
@@ -638,26 +680,37 @@ public class PlaylistActivity extends AppCompatActivity {
                     confirmed = true;
                 }
                 curr = getCurrent();
+
                 slices = load();
 
 
+
                 // Check if current song has a slice
-                if (slices.containsKey(curr)){
+                if (slices.containsKey(trackuri)){
                     System.out.println("in there");
                     boolean remaining  = false;
-                    for(int i = 0; i < slices.get(curr).size(); i++){
-                        int first = slices.get(curr).get(i)[0];
-                        int second = slices.get(curr).get(i)[1];
+                    for(int i = 0; i < slices.get(trackuri).size(); i++){
+                        int first = slices.get(trackuri).get(i)[0];
+                        int second = slices.get(trackuri).get(i)[1];
 
+                        double f = first/1000.0;
+                        double se = second/1000.0;
+                        double sec = seconds/1000.0;
+
+                        System.out.println("Seeing if " + sec + " can jump to " + f + ", " + se);
+                        System.out.println("Close enought 1 is " + closeEnough(sec, f));
+                        System.out.println("Close enought 2 is " + closeEnough(sec, se));
                         // Song is currently in a slice so all good
-                        if (seconds >= first && (seconds <= second || second == -1 || second == duration)){
+                        if ((seconds >= first || closeEnough(f, sec)) && (seconds <= second || closeEnough(se, sec) || second == duration)){
+                        // if ((seconds >= first) && (seconds <= second|| second == duration)){
+
                             System.out.println("Currently in a slice");
                             remaining = true;
                             break;
                         }
 
                         // Not in a slice, so jumping to the next one
-                        else if (seconds < first){
+                        else if (seconds < first && !closeEnough(f, sec)){
                             System.out.println("Found a slice to jump to");
                             remaining = true;
                             check();
@@ -673,6 +726,7 @@ public class PlaylistActivity extends AppCompatActivity {
                                 Thread.sleep(500);
                             } catch (InterruptedException e) {
                                 e.printStackTrace();
+                                pause();
                                 return;
                             }
                             break;
@@ -689,6 +743,7 @@ public class PlaylistActivity extends AppCompatActivity {
                             Thread.sleep(500);
                         } catch (InterruptedException e) {
                             e.printStackTrace();
+                            pause();
                             return;
                         }
                     }
@@ -698,114 +753,161 @@ public class PlaylistActivity extends AppCompatActivity {
                     Thread.sleep(100);
                 } catch (InterruptedException e) {
                     e.printStackTrace();
+                    pause();
                     return;
                 }
                 // Iter makes sure we don't prematurely end playback because Spotify API takes a second to catch up
                 iter ++;
+                System.out.println("curr is " + curr);
+                System.out.println("model uri is " + model.uri);
             }
-            while ((isPlaying() && !curr.equals("")) || iter < 10 || !mSpotifyAppRemote.isConnected());
+            while (running && ( curr.equals(model.uri)) || curr.equals("") || iter < 10 || !mSpotifyAppRemote.isConnected());
             System.out.println("is playing is " + isPlaying());
             System.out.println("curr is " + curr);
             System.out.println("Loop over");
 
+            pause();
+
+        }
+
+        private void pause(){
+            terminate();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    fab.setImageResource(R.drawable.ic_baseline_play_arrow_24);
+                }
+            });
         }
 
         // Load the slices from the json file into the arraylist
         private HashMap<String, ArrayList<int[]>> load(){
-            HashMap<String, ArrayList<int[]>> slices = new HashMap<>();
-            try {
-                String json = getSlices();
-                JSONObject jsonObject = (json.equals("")) ? new JSONObject() : new JSONObject(json);
-                if (jsonObject.has(model.uri)){
-                    JSONObject playlist = (JSONObject) jsonObject.get(model.uri);
-                    for (Iterator<String> it = playlist.keys(); it.hasNext(); ) {
-                        String s = it.next();
-                        JSONObject song = (JSONObject) playlist.get(s);
-                        ArrayList<int[]> temp = new ArrayList<>();
-                        for (int j = 0; j < song.names().length(); j += 2) {
-                            String name = (String) song.names().get(j);
-                            String name2 = (String) song.names().get(j + 1);
-                            int first = (int) song.get(name);
-                            int second = (int) song.get(name2);
-                            int [] t = {first, second};
-                            temp.add(t);
-                        }
-                        slices.put(s, temp);
+            if(running) {
+                HashMap<String, ArrayList<int[]>> slices = new HashMap<>();
+                try {
+                    String json = getSlices();
+                    JSONObject jsonObject = (json.equals("")) ? new JSONObject() : new JSONObject(json);
+                    if (jsonObject.has(model.uri)) {
+                        JSONObject playlist = (JSONObject) jsonObject.get(model.uri);
+                        for (Iterator<String> it = playlist.keys(); it.hasNext(); ) {
+                            String s = it.next();
+                            JSONObject song = (JSONObject) playlist.get(s);
+                            ArrayList<int[]> temp = new ArrayList<>();
+                            for (int j = 0; j < song.names().length(); j += 2) {
+                                String name = (String) song.names().get(j);
+                                String name2 = (String) song.names().get(j + 1);
+                                int first = (int) song.get(name);
+                                int second = (int) song.get(name2);
+                                int[] t = {first, second};
+                                temp.add(t);
+                            }
+                            slices.put(s, temp);
 
+                        }
                     }
+                } catch (JSONException j) {
+                    j.printStackTrace();
                 }
+                return slices;
             }
-            catch(JSONException j){
-                j.printStackTrace();
-            }
-            return slices;
+            return new HashMap<>();
         }
 
         // Reconnect to spotify if disconnected
         private void check(){
-            if (!mSpotifyAppRemote.isConnected() && !isConnecting) {
-                isConnecting = true;
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        System.out.println("Spotify disconnected");
-                        connect();
-                    }
-                });
-            }
-            else {
-                isConnecting = false;
+            if (running) {
+                if (!mSpotifyAppRemote.isConnected() && !isConnecting) {
+                    isConnecting = true;
+                    runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            System.out.println("Spotify disconnected");
+                            connect();
+                        }
+                    });
+                } else {
+                    isConnecting = false;
+                }
             }
         }
 
         // Check if spotify is playing anything
         private boolean isPlaying(){
-            check();
-            CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
-            Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
-            if (playerStateResult.isSuccessful()) {
-                PlayerState playerState = playerStateResult.getData();
-                return !playerState.isPaused;
-            } else {
-                Throwable error = playerStateResult.getError();
-                error.printStackTrace();
-                System.out.println(error.getMessage());
-                if (error.getMessage() == ("Result was not delivered on time.")&& !shown) {
-                    Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
-                    System.out.println("Wasn't delivered on time");
-                    shown = true;
-                }
+            if (running) {
+                check();
+                CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
+                Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
+                if (playerStateResult.isSuccessful()) {
+                    PlayerState playerState = playerStateResult.getData();
+                    return !playerState.isPaused;
+                } else {
+                    Throwable error = playerStateResult.getError();
+                    error.printStackTrace();
+                    System.out.println(error.getMessage());
+                    if (error.getMessage() == ("Result was not delivered on time.") && !shown) {
+                        Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                        System.out.println("Wasn't delivered on time");
+                        shown = true;
+                    }
 
-                return false;
+                    return false;
+                }
             }
+            return false;
         }
 
         // Retrieve the current song
         private String getCurrent(){
-            check();
-            CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
-            Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
-            if (playerStateResult.isSuccessful()) {
-                PlayerState playerState = playerStateResult.getData();
-                seconds = (int) playerState.playbackPosition;
-                if (playerState.track != null){
-                    duration = (int) playerState.track.duration;
-                    return playerState.track.uri;
-                }
-            } else {
-                Throwable error = playerStateResult.getError();
-                error.printStackTrace();
-                System.out.println(error.getMessage());
-                if (error.getMessage() == ("Result was not delivered on time.") && !shown){
-                    Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
-                    shown = true;
+            if(running) {
+                check();
+                Subscription<PlayerContext> sub = mSpotifyAppRemote.getPlayerApi().subscribeToPlayerContext();
+                Result<PlayerContext> res = sub.await(1, TimeUnit.SECONDS);
+                String uri = "";
+                if (res.isSuccessful()) {
+                    PlayerContext player = res.getData();
+                    uri = player.uri;
+                } else {
+                    Throwable error = res.getError();
+                    error.printStackTrace();
+                    System.out.println(error.getMessage());
+                    if (error.getMessage() == ("Result was not delivered on time.") && !shown) {
+                        Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                        shown = true;
+                    }
                 }
 
+                CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
+                Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);
+                if (playerStateResult.isSuccessful()) {
+
+                    PlayerState playerState = playerStateResult.getData();
+                    seconds = (int) playerState.playbackPosition;
+                    if (playerState.track != null) {
+                        duration = (int) playerState.track.duration;
+                        trackuri = playerState.track.uri;
+                    }
+                } else {
+                    Throwable e = playerStateResult.getError();
+                    e.printStackTrace();
+                    System.out.println(e.getMessage());
+                    if (e.getMessage() == ("Result was not delivered on time.") && !shown) {
+                        Snackbar.make(songRecycler, "Trouble connecting to spotify", Snackbar.LENGTH_SHORT).show();
+                        shown = true;
+                    }
+
+
+                }
+                return uri;
             }
-            return "";
+            return "break";
+        }
+
+        public void terminate(){
+            running = false;
         }
 
 
     }
+
 
 }

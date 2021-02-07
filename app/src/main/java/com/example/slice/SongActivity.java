@@ -8,6 +8,9 @@ import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
@@ -751,6 +754,11 @@ public class SongActivity extends AppCompatActivity {
 
                 // iter is here to make sure this thread doesn't end prematurely because it takes a second for spotify api to recognize what we are listening to
                 iter++;
+                AlarmManager alarmManager =
+                        (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+                Intent intent = new Intent(getApplicationContext(), AlertReciever.class);
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), iter, intent, 0);
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, 3000, pendingIntent);
             }
             while(running && (st.equals(model.uri)) || iter < 10 || !mSpotifyAppRemote.isConnected());
             System.out.println("Loop over");

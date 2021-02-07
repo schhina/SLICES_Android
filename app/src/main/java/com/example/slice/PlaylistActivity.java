@@ -8,11 +8,15 @@ import androidx.core.widget.NestedScrollView;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import android.app.AlarmManager;
+import android.app.PendingIntent;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Typeface;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.PowerManager;
 import android.util.Log;
 import android.view.ContextThemeWrapper;
 import android.view.LayoutInflater;
@@ -645,6 +649,8 @@ public class PlaylistActivity extends AppCompatActivity {
 
             if (!running) return;
 
+
+
             String curr;
             int iter = 0;
             HashMap<String, ArrayList<int[]>> slices;
@@ -760,6 +766,12 @@ public class PlaylistActivity extends AppCompatActivity {
                 iter ++;
                 System.out.println("curr is " + curr);
                 System.out.println("model uri is " + model.uri);
+                AlarmManager alarmManager =
+                        (AlarmManager) getApplicationContext().getSystemService(Context.ALARM_SERVICE);
+                Intent intent = new Intent(getApplicationContext(), AlertReciever.class);
+                PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), iter, intent, 0);
+                alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, 3000, pendingIntent);
+
             }
             while (running && ( curr.equals(model.uri)) || curr.equals("") || iter < 10 || !mSpotifyAppRemote.isConnected());
             System.out.println("is playing is " + isPlaying());

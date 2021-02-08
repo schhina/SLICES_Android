@@ -125,7 +125,7 @@ public class SongActivity extends AppCompatActivity {
         super.onStart();
 
         // Spotify stuff
-        connect();
+        connect(false);
 
         // Init Adapter
         sliceAdapter = new RecyclerView.Adapter<FindSlice>() {
@@ -345,7 +345,7 @@ public class SongActivity extends AppCompatActivity {
         }
     }
 
-    public void connect(){
+    public void connect(boolean restart){
         // Spotify connection
         ConnectionParams connectionParams =
                 new ConnectionParams.Builder(CLIENT_ID)
@@ -360,7 +360,10 @@ public class SongActivity extends AppCompatActivity {
                     public void onConnected(SpotifyAppRemote spotifyAppRemote) {
                         mSpotifyAppRemote = spotifyAppRemote;
                         Log.d("PlaylistActivity", "Connected! Yay!");
-
+                        if (restart){
+                            System.out.println("Restarting the thread");
+                            playSong(true);
+                        }
                         // Now you can start interacting with App Remote
                     }
 
@@ -580,8 +583,12 @@ public class SongActivity extends AppCompatActivity {
         return;
     }
 
-    // Play the Current song by making a new thread
     public void playSong(View v){
+        playSong(false);
+    }
+
+    // Play the Current song by making a new thread
+    public void playSong(boolean restart){
         // Check if any other threads are playing something
         boolean running = false;
         try {
@@ -606,19 +613,19 @@ public class SongActivity extends AppCompatActivity {
 
             // Play the song and start the thread for slices
             if (!SpotifyAppRemote.isSpotifyInstalled(getApplicationContext())) Snackbar.make(sliceRecycler, "Spotify must be installed to use this feature", Snackbar.LENGTH_SHORT).show();
-            else if (running){
+            else if (running && !restart){
                 mSpotifyAppRemote.getPlayerApi().pause();
                 menu.findItem(R.id.action_play_song).setIcon(ContextCompat.getDrawable(this, R.drawable.ic_baseline_pause_24));
             }
             else{
                 if (!mSpotifyAppRemote.isConnected()) {
                     // Snackbar.make(findViewById(android.R.id.content), "Wait a few seconds before trying again", Snackbar.LENGTH_SHORT);
-                    connect();
+                    connect(false);
                     Toast.makeText(this, "Wait a few seconds before trying again", Toast.LENGTH_SHORT).show();
                     System.out.println("Wasn't connected to spotify at first");
                 }
                 menu.findItem(R.id.action_play_song).setIcon(ContextCompat.getDrawable(this, R.drawable.ic_baseline_pause_24));
-                mSpotifyAppRemote.getPlayerApi().play(model.uri);
+                if (!restart) mSpotifyAppRemote.getPlayerApi().play(model.uri);
                 PlaySongThread thread = new PlaySongThread();
                 thread.setName("PlaySongThread");
                 thread.start();
@@ -752,6 +759,8 @@ public class SongActivity extends AppCompatActivity {
                 System.out.println("Listening to " + st);
                 System.out.println("Remaining is " + remaining);
 
+                if (st.equals("break"))break;
+
                 // iter is here to make sure this thread doesn't end prematurely because it takes a second for spotify api to recognize what we are listening to
                 iter++;
                 AlarmManager alarmManager =
@@ -760,7 +769,7 @@ public class SongActivity extends AppCompatActivity {
                 PendingIntent pendingIntent = PendingIntent.getBroadcast(getApplicationContext(), iter, intent, 0);
                 alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, 3000, pendingIntent);
             }
-            while(running && (st.equals(model.uri)) || iter < 10 || !mSpotifyAppRemote.isConnected());
+            while(running && (st.equals(model.uri)) || st.equals("") || iter < 10 || !mSpotifyAppRemote.isConnected());
             System.out.println("Loop over");
 
             pause();
@@ -779,9 +788,10 @@ public class SongActivity extends AppCompatActivity {
                     @Override
                     public void run() {
                         System.out.println("Spotify disconnected");
-                        connect();
+                        connect(true);
                     }
                 });
+                terminate();
             }
             else{
                 isConnecting = false;
@@ -811,7 +821,7 @@ public class SongActivity extends AppCompatActivity {
 
         // Returns the current song uri and updates the seconds global variable
         private String getCurrent(){
-            if (!running) return "break'";
+            if (!running) return "break";
             check();
             CallResult<PlayerState> playerStateCall = mSpotifyAppRemote.getPlayerApi().getPlayerState();
             Result<PlayerState> playerStateResult = playerStateCall.await(1, TimeUnit.SECONDS);

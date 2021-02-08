@@ -21,48 +21,50 @@
         android:id="@+id/slisce_template_left_time_EditText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="68dp"
-        android:typeface="monospace"
-        android:textColor="#ffffff"
+        android:background="@android:color/transparent"
         android:numeric="decimal"
         android:text="0"
-        android:background="@android:color/transparent"
+        android:textColor="#ffffff"
+        android:typeface="monospace"
         app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.04"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="1.0" />
 
     <EditText
         android:id="@+id/slice_template_right_time_EditText"
         style="@style/Widget.AppCompat.AutoCompleteTextView"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="295dp"
-        android:layout_marginLeft="295dp"
-        android:layout_marginTop="67dp"
         android:layout_marginEnd="1dp"
         android:layout_marginRight="1dp"
         android:layout_marginBottom="1dp"
+        android:background="@android:color/transparent"
         android:numeric="decimal"
         android:text="-1"
-        android:background="@android:color/transparent"
         android:textColor="#fff"
         android:typeface="monospace"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.936"
         app:layout_constraintStart_toEndOf="@+id/slisce_template_left_time_EditText"
         app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.6" />
+        app:layout_constraintVertical_bias="1.0" />
 
     <Button
         android:id="@+id/slice_template_delete_button"
         android:layout_width="41dp"
         android:layout_height="41dp"
-        android:layout_marginStart="352dp"
-        android:layout_marginLeft="352dp"
-        android:layout_marginTop="4dp"
+        android:layout_marginBottom="5dp"
         android:background="@drawable/ic_baseline_close_24"
         android:textSize="10dp"
+        app:layout_constraintBottom_toTopOf="@+id/slice_template_right_time_EditText"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.956"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

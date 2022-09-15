@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:background="#242424"
-    tools:context=".SongActivity">
+    tools:context="my.slice.app.SongActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:fitsSystemWindows="true"

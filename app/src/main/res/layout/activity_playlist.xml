@@ -6,7 +6,7 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:background="#242424"
-    tools:context=".PlaylistActivity">
+    tools:context="my.slice.app.PlaylistActivity">
 
     <com.google.android.material.appbar.AppBarLayout
         android:id="@+id/app_bar"
@@ -87,6 +87,8 @@
         android:layout_margin="@dimen/fab_margin"
         app:layout_anchor="@id/app_bar"
         app:layout_anchorGravity="bottom|end"
+        app:backgroundTint="@color/blueColor"
+
          />
 
 

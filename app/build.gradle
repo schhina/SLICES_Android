@@ -5,13 +5,15 @@ android {
     buildToolsVersion "29.0.3"
 
     defaultConfig {
-        applicationId "com.example.slice"
+        applicationId "my.slice.app"
         minSdkVersion 16
         targetSdkVersion 29
-        versionCode 1
-        versionName "1.0"
+        versionCode 4
+        versionName "1.2.1"
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+
+        manifestPlaceholders = [redirectSchemeName: "http://127.0.0.1:8000/", redirectHostName: "auth"]
     }
 
     buildTypes {
@@ -46,7 +48,9 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.2'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.3.0'
 
-    implementation project(':spotify-app-remote-release-0.7.1')
+
+    implementation project(':spotify-app-remote-release-0.7.1 (2)')
+    implementation "com.spotify.android:auth:2.0.2"
     implementation "com.google.code.gson:gson:2.8.5"
     implementation 'com.spotify.android:auth:1.1.0'
     compile 'com.github.kaaes:spotify-web-api-android:0.4.1'
@@ -56,6 +60,7 @@ dependencies {
     implementation("com.squareup.okhttp3:okhttp:4.9.0")
 
     implementation 'com.github.eddydn:AdvancedNestedScrollView:1.1'
+    implementation 'me.everything:overscroll-decor-android:1.1.0'
 
 
 

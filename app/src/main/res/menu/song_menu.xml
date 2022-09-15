@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="com.example.slice.SongActivity">
+    tools:context="com.example.slice.my.example.slice.SongActivity">
     <item
         android:id="@+id/action_play_song"
         android:orderInCategory="50"
@@ -18,6 +18,12 @@
         android:id="@+id/action_open_spotify_song"
         android:orderInCategory="150"
         android:title="View Song on Spotify"
+        app:showAsAction="never"
+        />
+    <item
+        android:id="@+id/action_change_time_settings"
+        android:orderInCategory="200"
+        android:title="Change time settings"
         app:showAsAction="never"
         />
 </menu>

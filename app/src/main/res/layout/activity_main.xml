@@ -5,7 +5,7 @@
     android:background="#242424"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".MainActivity">
+    tools:context="my.slice.app.MainActivity">
 <!--    android:layout_width="234dp"-->
 <!--    android:layout_height="55dp"-->
 <!--    android:fontFamily="monospace"-->
